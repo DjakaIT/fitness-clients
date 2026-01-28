@@ -1,46 +1,129 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+} from "react-native";
 
-export default function HomeScreen() {
+import { useFonts } from "expo-font";
+
+
+const colors = {
+  background: "#ffffff",
+  accent: "#FFE4E6", 
+  accentDark: "#ba4984",    
+  text: "#761045",
+  textMuted: "#717182",
+  ctaText: "#9E3C6E",
+};;
+
+export default function HomeScreen({ navigation }) {
+  const goLogin = () => navigation?.navigate?.("Login");
+
+   const [loaded] = useFonts({
+    LatoRegular: require("../../assets/fonts/Lato-Regular.ttf"),
+    LatoBold: require("../../assets/fonts/Lato-Bold.ttf"),
+  });
+
+
+if(!loaded){
+    return null;
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.logoWrap}>
-        <View style={styles.logoPlaceholder}>
-          <Text style={styles.logoText}>Logo</Text>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.container}>
+        {/* TOP GROUP */}
+        <View style={styles.header}>
+          <View style={styles.logoPlaceholder}>
+            <Image
+              source={require("../../assets/images/logo.jpeg")}
+              style={styles.logo}
+              resizeMode="cover"
+            />
+          </View>
+
+          <Text style={styles.subtitle}>Tvoj vodič do promjene</Text>
         </View>
-      </View>
-      <View style={styles.copyWrap}>
-        <Text style={styles.title}>Marta Fitness</Text>
-        <Text style={styles.subtitle}>Your curated exercise library, anytime.</Text>
+
+        {/* BOTTOM CTA */}
+        <Pressable
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+          onPress={goLogin}
+        >
+          <Text style={styles.ctaText}>Prijavi se</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
-const BG = "#f7f8fa";          // soft whitesmoke
-const ACCENT = "#f5ccd8";      // rose blush
-const ACCENT_DARK = "#e89fb8"; // deeper rose
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG, alignItems: "center", justifyContent: "center", padding: 24, gap: 32, width: "100%" },
-  logoWrap: { alignItems: "center", justifyContent: "center" },
-  logoPlaceholder: {
-    width: 164,
-    height: 164,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    borderWidth: 3,
-    borderColor: ACCENT,
-    shadowColor: ACCENT_DARK,
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-    alignItems: "center",
-    justifyContent: "center",
+  screen: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: colors.background,
   },
-  logoText: { color: ACCENT_DARK, fontWeight: "700", letterSpacing: 1 },
-  copyWrap: { alignItems: "center", gap: 8 },
-  title: { fontSize: 24, fontWeight: "700", color: "#1f1f1f" },
-  subtitle: { fontSize: 16, color: "#555", textAlign: "center", maxWidth: 320 },
+
+  container: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-around",
+    paddingHorizontal: 24,
+    paddingVertical: 48,
+  },
+
+  header: {
+    alignItems: "center",
+    width: "100%",
+  },
+
+  logoPlaceholder: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: colors.ctaText,
+    borderWidth: 3,
+    borderColor: colors.accent,
+    overflow: "hidden",
+    marginBottom: 5,
+  },
+
+  logo: {
+    width: "100%",
+    height: "100%",
+  },
+
+  subtitle: {
+    fontFamily: "LatoBold",
+    fontSize: 16,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: 10
+  },
+
+  cta: {
+    backgroundColor: colors.accent,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    marginBottom: -30,
+  },
+
+  ctaPressed: {
+    backgroundColor: colors.accentDark,
+  },
+
+  ctaText: {
+    fontFamily: "LatoBold",
+    color: colors.ctaText,
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "LatoBold",
+  },
 });
