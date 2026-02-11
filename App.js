@@ -8,6 +8,8 @@ import WelcomeScreen from "./src/pages/Welcome-screen";
 import LoginScreen from "./src/pages/Auth/Login-screen";
 import RegisterScreen from "./src/pages/Auth/Register-screen";
 import HomeScreen from "./src/pages/UI/Home-screen";
+import VideoCategories from "./src/pages/UI/Video/VideoCategories-screen";
+import VideoScreen from "./src/pages/UI/Video/VideoList-screen";
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +25,8 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="VideoCategories" component={VideoCategories} />
+          <Stack.Screen name="Video" component={VideoScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

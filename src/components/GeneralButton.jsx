@@ -57,21 +57,21 @@ const GeneralButton = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
-        style={({ pressed }) => [
-          styles.pressable,
-          sizeStyles[size],
-          disabled && styles.disabled,
-        ]}
+        // --- FIX IS HERE: REMOVED sizeStyles[size] ---
+        style={({ pressed }) => [styles.pressable, disabled && styles.disabled]}
         {...rest}
       >
         <LinearGradient
           colors={disabled ? ["#9CA3AF", "#6B7280"] : colors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
+          // Keep sizeStyles here so the gradient fills the whole button
           style={[styles.gradient, sizeStyles[size]]}
         >
           {typeof children === "string" ? (
-            <Text style={[styles.text, { fontSize: textSizes[size] }, textStyle]}>
+            <Text
+              style={[styles.text, { fontSize: textSizes[size] }, textStyle]}
+            >
               {children}
             </Text>
           ) : (
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
+    backgroundColor: "transparent", // Good practice to be explicit
   },
   fullWidth: {
     width: "100%",
@@ -98,11 +99,13 @@ const styles = StyleSheet.create({
   pressable: {
     borderRadius: 14,
     overflow: "hidden",
+    // No padding here!
   },
   gradient: {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
+    width: "100%", // Ensures gradient fills the pressable width
   },
   text: {
     color: "#FFFFFF",

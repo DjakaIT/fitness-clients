@@ -10,37 +10,34 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons"; // Built-in Expo icons
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import GeneralButton from "../../components/GeneralButton"; // Adjust path if needed
+import GeneralButton from "../../components/GeneralButton";
 
 const { width } = Dimensions.get("window");
 
-// --- Palette (Matching your Welcome Screen) ---
 const colors = {
   bgDeep: "#4b0622",
   bgSoft: "#654b55",
   textPrimary: "#FFFFFF",
   textSecondary: "#DBC1C9",
   accentPink: "#F497BA",
-  cardBg: "rgba(255, 255, 255, 0.1)", // Glass effect
+  cardBg: "rgba(255, 255, 255, 0.1)",
   cardBorder: "rgba(255, 255, 255, 0.2)",
-  success: "#34D399", // Green for progress
+  success: "#34D399",
 };
 
-// --- Dummy Data ---
 const userData = {
   name: "Marta",
   currentWeight: 68.5,
   startWeight: 75.0,
   goalWeight: 62.0,
-  progressPercent: 0.65, // 65%
+  progressPercent: 0.65,
 };
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
+  const navigate = useNavigation();
 
-  // Calculated values for display
   const lostSoFar = (userData.startWeight - userData.currentWeight).toFixed(1);
   const percentDisplay = Math.round(userData.progressPercent * 100);
 
@@ -89,9 +86,7 @@ export default function HomeScreen() {
                 />
               </View>
 
-              {/* Data Points Grid */}
               <View style={styles.statsRow}>
-                {/* Point 1: Current */}
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Trenutno</Text>
                   <Text style={styles.statValue}>
@@ -99,10 +94,8 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                {/* Divider */}
                 <View style={styles.verticalDivider} />
 
-                {/* Point 2: Change */}
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Izgubljeno</Text>
                   <Text
@@ -115,10 +108,8 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                {/* Divider */}
                 <View style={styles.verticalDivider} />
 
-                {/* Point 3: Goal */}
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Cilj</Text>
                   <Text style={styles.statValue}>
@@ -128,44 +119,24 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* --- ACTION BUTTONS --- */}
             <Text style={styles.sectionLabel}>Brzi Pristup</Text>
 
             <View style={styles.buttonStack}>
-              {/* Video Library Button */}
               <GeneralButton
-                onPress={() => console.log("Navigate to Video Lib")}
-                colors={["#3b82f6", "#2563eb"]} // Blue variation for distinction
+                onPress={() => navigate.navigate("VideoCategories")}
+                colors={["#8b5cf6", "#7c3aed"]} // Purple variation
                 fullWidth
                 style={styles.actionButton}
               >
-                <View style={styles.btnContent}>
-                  <Ionicons
-                    name="play-circle-outline"
-                    size={24}
-                    color="#FFF"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text style={styles.btnText}>VIDEO BIBLIOTEKA</Text>
-                </View>
+                Video zbirka
               </GeneralButton>
-
-              {/* Impressions Button */}
               <GeneralButton
                 onPress={() => console.log("Navigate to Impressions")}
                 colors={["#8b5cf6", "#7c3aed"]} // Purple variation
                 fullWidth
                 style={styles.actionButton}
               >
-                <View style={styles.btnContent}>
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={24}
-                    color="#FFF"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text style={styles.btnText}>DOJMOVI & FEEDBACK</Text>
-                </View>
+                Dojmovi
               </GeneralButton>
             </View>
           </ScrollView>
