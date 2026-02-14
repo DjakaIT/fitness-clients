@@ -15,7 +15,10 @@ export default function VideoScreen({ route, navigation }) {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <VideoCard
+              //TODO: fill the whole videos.js object file with names, ids, categories.
               video={item}
+              title={item.title}
+              image={`https://img.youtube.com/vi/${item.youtubeID}/maxresdefault.jpg`}
               onPress={() => navigation.navigate("Video", { video: item })}
             />
           )}
