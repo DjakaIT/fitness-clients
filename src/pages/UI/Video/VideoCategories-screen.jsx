@@ -2,23 +2,13 @@ import React from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CategoryCard from "../../../components/CategoryCard";
+import { getCategories } from "../../../../backend/data/videos";
 
-const CATEGORIES = [
-  { id: "1", name: "Strength", key: "strength" },
-  { id: "2", name: "Cardio", key: "cardio" },
-  { id: "3", name: "Yoga", key: "yoga" },
-  { id: "4", name: "Pilates", key: "pilates" },
-  { id: "5", name: "HIIT", key: "hiit" },
-  { id: "6", name: "Stretching", key: "stretching" },
-  { id: "7", name: "Boxing", key: "boxing" },
-  { id: "8", name: "Dance", key: "dance" },
-  { id: "9", name: "Meditation", key: "meditation" },
-  { id: "10", name: "Cycling", key: "cycling" },
-];
+const CATEGORIES = getCategories();
 
 export default function VideoCategories({ navigation }) {
   const handleCategoryPress = (category) => {
-    navigation.navigate("Video", { category: category.key });
+    navigation.navigate("Video", { category: category });
   };
 
   return (
@@ -29,15 +19,15 @@ export default function VideoCategories({ navigation }) {
       </View>
       <FlatList
         data={CATEGORIES}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
+        keyExtractor={(item) => item}
         columnWrapperStyle={styles.row}
+        numColumns={2}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <CategoryCard
-            name={item.name}
-            categoryKey={item.key}
+            name={item}
+            categoryKey={item}
             onPress={() => handleCategoryPress(item)}
           />
         )}
