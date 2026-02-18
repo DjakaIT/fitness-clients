@@ -37,7 +37,11 @@ export default function LoginScreen() {
           />
 
           <TouchableOpacity
-            onPress={() => navigate.navigate("Home")}
+            onPress={() =>
+              navigate.navigate("MainTabs", {
+                screen: "Home",
+              })
+            }
             style={styles.button}
           >
             <Text style={styles.buttonText}>Log In</Text>
@@ -91,10 +95,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#111827",
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.05)",
     elevation: 3,
   },
   button: {
@@ -103,10 +104,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 18,
     alignItems: "center",
-    shadowColor: "#6366F1",
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    boxShadow: "0px 6px 12px rgba(99, 102, 241, 0.35)",
     elevation: 6,
   },
   buttonText: {

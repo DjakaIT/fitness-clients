@@ -1,6 +1,8 @@
 import React from "react";
-import { Pressable, Text, StyleSheet, Animated } from "react-native";
+import { Pressable, Text, StyleSheet, Animated, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+
+const useNativeDriver = Platform.OS !== "web";
 
 const GeneralButton = ({
   children,
@@ -18,7 +20,7 @@ const GeneralButton = ({
   const handlePressIn = () => {
     Animated.spring(animatedScale, {
       toValue: 0.96,
-      useNativeDriver: true,
+      useNativeDriver,
     }).start();
   };
 
@@ -27,7 +29,7 @@ const GeneralButton = ({
       toValue: 1,
       friction: 3,
       tension: 40,
-      useNativeDriver: true,
+      useNativeDriver,
     }).start();
   };
 
@@ -86,12 +88,9 @@ const GeneralButton = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    boxShadow: "0px 8px 12px rgba(0, 0, 0, 0.2)",
     elevation: 8,
-    backgroundColor: "transparent", // Good practice to be explicit
+    backgroundColor: "transparent",
   },
   fullWidth: {
     width: "100%",

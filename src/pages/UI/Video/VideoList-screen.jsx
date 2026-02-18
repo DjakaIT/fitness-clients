@@ -7,6 +7,8 @@ export default function VideoScreen({ route, navigation }) {
   const { category } = route.params;
   const videos = getVideosByCategory(category);
 
+  const imageScale = category === "Trbušni mišići" ? 1.8 : 1.0; // Adjust scale based on category
+
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -18,8 +20,8 @@ export default function VideoScreen({ route, navigation }) {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
             <VideoCard
-              //TODO: fill the whole videos.js object file with names, ids, categories.
               video={item}
+              imageScale={imageScale}
               title={item.title}
               image={`https://img.youtube.com/vi/${item.youtubeID}/maxresdefault.jpg`}
               onPress={() => navigation.navigate("Video", { video: item })}

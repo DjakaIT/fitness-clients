@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getVideosByCategory } from "../../backend/data/videos";
 
 const colors = {
   cardBg: "#FFFFFF",
@@ -9,12 +10,17 @@ const colors = {
   button: "#E9A6B2",
 };
 
-export default function VideoCard({ title, image, onPress }) {
+export default function VideoCard({ title, image, onPress, imageScale }) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.card}>
         {/* IMAGE */}
-        <Image source={{ uri: image }} style={styles.image} />
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: image }}
+            style={[styles.image, { transform: [{ scale: imageScale }] }]}
+          />
+        </View>
 
         {/* CONTENT */}
         <View style={styles.content}>
@@ -48,17 +54,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
     borderRadius: 28,
     padding: 14,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.35,
-    shadowRadius: 30,
+    boxShadow: `0px 18px 30px rgba(233, 216, 245, 0.35)`,
     elevation: 10,
   },
 
-  image: {
+  imageContainer: {
     width: 140,
     height: 140,
     borderRadius: 20,
+    overflow: "hidden",
+  },
+
+  image: {
+    width: "100%",
+    height: "100%",
   },
 
   content: {

@@ -131,7 +131,7 @@ export default function HomeScreen() {
                 Video zbirka
               </GeneralButton>
               <GeneralButton
-                onPress={() => console.log("Navigate to Impressions")}
+                onPress={() => navigate.navigate("Impressions")}
                 colors={["#8b5cf6", "#7c3aed"]} // Purple variation
                 fullWidth
                 style={styles.actionButton}
