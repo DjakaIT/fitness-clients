@@ -24,7 +24,7 @@ export default function VideoCard({ title, image, onPress, imageScale }) {
 
         {/* CONTENT */}
         <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={styles.title} numberOfLines={3}>
             {title}
           </Text>
 
@@ -36,7 +36,7 @@ export default function VideoCard({ title, image, onPress, imageScale }) {
             ]}
           >
             <Ionicons name="play" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Watch now</Text>
+            <Text style={styles.buttonText}>Pogledaj</Text>
           </Pressable>
         </View>
       </View>

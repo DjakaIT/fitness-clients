@@ -1,17 +1,38 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginScreen() {
-  const navigate = useNavigation();
+  const navigation = useNavigation();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      login("mock-token");
+      setLoading(false);
+    }, 1000);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -27,6 +48,11 @@ export default function LoginScreen() {
             placeholder="Email"
             placeholderTextColor="#9CA3AF"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
 
           <TextInput
@@ -34,25 +60,35 @@ export default function LoginScreen() {
             placeholderTextColor="#9CA3AF"
             secureTextEntry
             style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
           />
 
           <TouchableOpacity
-            onPress={() =>
-              navigate.navigate("MainTabs", {
-                screen: "Home",
-              })
-            }
-            style={styles.button}
+            onPress={handleLogin}
+            style={[styles.button, loading && styles.buttonDisabled]}
+            disabled={loading}
           >
-            <Text style={styles.buttonText}>Log In</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Log In</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Don’t have an account?
-            <Text style={styles.footerLink}> Sign up</Text>
+            Don't have an account?
+            <Text
+              style={styles.footerLink}
+              onPress={() => navigation.navigate("Register")}
+            >
+              {" "}
+              Sign up
+            </Text>
           </Text>
         </View>
       </View>
@@ -95,7 +131,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#111827",
     marginBottom: 16,
-    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.05)",
     elevation: 3,
   },
   button: {
@@ -104,8 +139,10 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 18,
     alignItems: "center",
-    boxShadow: "0px 6px 12px rgba(99, 102, 241, 0.35)",
     elevation: 6,
+  },
+  buttonDisabled: {
+    backgroundColor: "#A5B4FC",
   },
   buttonText: {
     color: "#FFFFFF",

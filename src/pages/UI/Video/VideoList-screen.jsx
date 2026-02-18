@@ -7,7 +7,7 @@ export default function VideoScreen({ route, navigation }) {
   const { category } = route.params;
   const videos = getVideosByCategory(category);
 
-  const imageScale = category === "Trbušni mišići" ? 1.8 : 1.0; // Adjust scale based on category
+  const imageScale = category === "Trbušni mišići" ? 1.8 : 1.0;
 
   return (
     <>
@@ -15,7 +15,7 @@ export default function VideoScreen({ route, navigation }) {
         <FlatList
           data={videos}
           keyExtractor={(item) => item.id}
-          containerCardsStyle={styles.containerCards}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
@@ -41,7 +41,8 @@ const styles = StyleSheet.create({
   separator: {
     height: 20,
   },
-  containerCards: {
-    paddingVertical: 20,
+  listContent: {
+    paddingTop: 20,
+    paddingBottom: 100, // enough space to clear the BottomBar
   },
 });

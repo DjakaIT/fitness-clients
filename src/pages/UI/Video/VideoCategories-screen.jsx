@@ -8,14 +8,14 @@ const CATEGORIES = getCategories();
 
 export default function VideoCategories({ navigation }) {
   const handleCategoryPress = (category) => {
-    navigation.navigate("Video", { category: category });
+    navigation.navigate("VideoList", { category: category });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Workouts</Text>
-        <Text style={styles.subtitle}>Choose your category</Text>
+        <Text style={styles.title}>Vježbe</Text>
+        <Text style={styles.subtitle}>Izaberi odgovarajuću kategoriju</Text>
       </View>
       <FlatList
         data={CATEGORIES}

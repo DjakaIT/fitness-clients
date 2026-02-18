@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Animated,
 } from "react-native";
-import { House, VideoCamera, User, ChartBar } from "phosphor-react-native";
+
+import { House, VideoCamera, User } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PRIMARY = "#6366F1";
@@ -59,8 +60,7 @@ const BottomBar = ({ state, navigation }) => {
   const tabConfig = {
     Home: { label: "Home", Icon: House },
     VideoCategories: { label: "Videos", Icon: VideoCamera },
-    Video: { label: "Impressions", Icon: ChartBar },
-    Profile: { label: "Profile", Icon: User },
+    Impressions: { label: "Impressions", Icon: User },
   };
 
   return (
