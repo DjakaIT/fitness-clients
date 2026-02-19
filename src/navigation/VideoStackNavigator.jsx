@@ -7,7 +7,7 @@ const Stack = createNativeStackNavigator();
 export default function VideoStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="VideoCategories" component={VideoCategories} />
+      <Stack.Screen name="VideoCategoriesScreen" component={VideoCategories} />
       <Stack.Screen name="VideoList" component={VideoScreen} />
     </Stack.Navigator>
   );

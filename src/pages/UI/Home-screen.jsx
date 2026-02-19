@@ -119,8 +119,6 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <Text style={styles.sectionLabel}>Brzi Pristup</Text>
-
             <View style={styles.buttonStack}>
               <GeneralButton
                 onPress={() => navigate.navigate("VideoCategories")}
@@ -263,14 +261,6 @@ const styles = StyleSheet.create({
   },
 
   // Buttons
-  sectionLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 15,
-    fontFamily: "LatoBold",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
   buttonStack: {
     gap: 15, // Adds space between buttons
   },
