@@ -12,7 +12,7 @@ export default function VideoScreen({ route }) {
   if (!video?.youtubeID) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Video unavailable.</Text>
+        <Text style={styles.errorText}>Video nedostupan.</Text>
       </View>
     );
   }
