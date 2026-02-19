@@ -58,9 +58,9 @@ const BottomBar = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
 
   const tabConfig = {
-    Home: { label: "Home", Icon: House },
-    VideoCategories: { label: "Videos", Icon: VideoCamera },
-    Impressions: { label: "Impressions", Icon: User },
+    Home: { label: "Početna", Icon: House },
+    VideoCategories: { label: "Video zbirka", Icon: VideoCamera },
+    Impressions: { label: "Dojmovi", Icon: User },
   };
 
   return (
