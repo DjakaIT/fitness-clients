@@ -1,165 +1,144 @@
-import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
+  Image,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../context/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { useGoogleAuth } from "../../hooks/auth/useGoogleAuth";
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
-  const { login } = useAuth();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields.");
-      return;
-    }
-
-    setLoading(true);
-    setTimeout(() => {
-      login("mock-token");
-      setLoading(false);
-    }, 1000);
-  };
+  const { signIn, loading } = useGoogleAuth();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Log in to continue your journey</Text>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#9CA3AF"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            autoCapitalize="none"
-          />
-
-          <TouchableOpacity
-            onPress={handleLogin}
-            style={[styles.button, loading && styles.buttonDisabled]}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Log In</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Don't have an account?
-            <Text
-              style={styles.footerLink}
-              onPress={() => navigation.navigate("Register")}
-            >
-              {" "}
-              Sign up
+    <LinearGradient colors={["#654b55", "#4b0622"]} style={styles.background}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.brand}>Marta Fitness</Text>
+            <Text style={styles.title}>Dobrodošla!</Text>
+            <Text style={styles.subtitle}>
+              Prijavi se sa Google računom da nastaviš
             </Text>
-          </Text>
+          </View>
+
+          {/* Google Sign-In Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={signIn}
+              disabled={loading}
+              style={[styles.googleButton, loading && styles.buttonDisabled]}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#4285F4" />
+              ) : (
+                <>
+                  <Image
+                    source={{
+                      uri: "https://developers.google.com/identity/images/g-logo.png",
+                    }}
+                    style={styles.googleIcon}
+                  />
+                  <Text style={styles.googleButtonText}>
+                    Nastavi s Google računom
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Prijavom prihvaćaš uvjete korištenja
+            </Text>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FF",
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
   header: {
-    marginTop: 80,
+    marginBottom: 48,
+    alignItems: "center",
+  },
+  brand: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#F497BA",
+    textTransform: "uppercase",
+    letterSpacing: 3,
+    marginBottom: 16,
   },
   title: {
     fontSize: 34,
     fontWeight: "800",
-    color: "#1F2937",
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
   subtitle: {
     marginTop: 8,
     fontSize: 16,
-    color: "#6B7280",
+    color: "#DBC1C9",
+    textAlign: "center",
   },
-  form: {
-    marginTop: 40,
-  },
-  input: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    fontSize: 16,
-    color: "#111827",
-    marginBottom: 16,
-    elevation: 3,
-  },
-  button: {
-    marginTop: 12,
-    backgroundColor: "#6366F1",
-    paddingVertical: 18,
-    borderRadius: 18,
+  buttonContainer: {
     alignItems: "center",
-    elevation: 6,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    width: "100%",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   buttonDisabled: {
-    backgroundColor: "#A5B4FC",
+    opacity: 0.5,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
   },
   footer: {
-    marginBottom: 32,
+    marginTop: 32,
     alignItems: "center",
   },
   footerText: {
-    color: "#6B7280",
-    fontSize: 14,
-  },
-  footerLink: {
-    color: "#6366F1",
-    fontWeight: "600",
+    fontSize: 12,
+    color: "#DBC1C9",
+    opacity: 0.6,
   },
 });
