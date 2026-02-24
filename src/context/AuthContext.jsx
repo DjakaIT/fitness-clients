@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../backend/config/firebase";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const AuthContext = createContext(null);
 
@@ -66,8 +67,10 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      await GoogleSignin.signOut();
       await signOut(auth);
       setIsAuthenticated(false);
+      setUser(null);
     } catch (error) {
       console.error("Error signing out:", error);
     }

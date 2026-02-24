@@ -20,25 +20,20 @@ export function useGoogleAuth() {
     try {
       setLoading(true);
 
-      // Make sure Play Services are available (Android only, no-op on iOS)
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
-      // Show the native Google sign-in dialog
       const response = await GoogleSignin.signIn();
 
-      // Extract the idToken from the response
       const idToken = response?.data?.idToken;
 
       if (!idToken) {
         throw new Error("No idToken received from Google Sign-In");
       }
 
-      // Create a Firebase credential with the token
       const credential = GoogleAuthProvider.credential(idToken);
 
-      // Sign in to Firebase
       await signInWithCredential(auth, credential);
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
