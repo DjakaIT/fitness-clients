@@ -6,8 +6,6 @@ import {
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth } from "../../../backend/config/firebase";
 
-// Your WEB client ID (the one from the OAuth 2.0 "Web application" entry
-// in Google Cloud Console — NOT the Android or iOS client ID).
 GoogleSignin.configure({
   webClientId:
     "547929281594-hk36g23e4rnbr9i2cbp2brmuf2ftrdqv.apps.googleusercontent.com",
