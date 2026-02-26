@@ -7,8 +7,7 @@ import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth } from "../../../backend/config/firebase";
 
 GoogleSignin.configure({
-  webClientId:
-    "547929281594-hk36g23e4rnbr9i2cbp2brmuf2ftrdqv.apps.googleusercontent.com",
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 });
 
 export function useGoogleAuth() {
