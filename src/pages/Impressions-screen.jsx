@@ -1,6 +1,7 @@
 import ImpressionBox from "../components/ImpressionBox";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { styles } from "../styles/StylesImpressionsScreen";
 
 export default function ImpressionsScreen() {
   return (
@@ -16,9 +17,3 @@ export default function ImpressionsScreen() {
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-});

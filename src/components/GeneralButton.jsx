@@ -1,6 +1,11 @@
 import React from "react";
-import { Pressable, Text, StyleSheet, Animated, Platform } from "react-native";
+import { Pressable, Text, Animated, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import {
+  styles,
+  sizeStyles,
+  textSizes,
+} from "../styles/Components/StylesGeneralButton";
 
 const useNativeDriver = Platform.OS !== "web";
 
@@ -31,18 +36,6 @@ const GeneralButton = ({
       tension: 40,
       useNativeDriver,
     }).start();
-  };
-
-  const sizeStyles = {
-    sm: { paddingVertical: 10, paddingHorizontal: 16 },
-    md: { paddingVertical: 14, paddingHorizontal: 24 },
-    lg: { paddingVertical: 18, paddingHorizontal: 32 },
-  };
-
-  const textSizes = {
-    sm: 14,
-    md: 16,
-    lg: 18,
   };
 
   return (
@@ -84,37 +77,5 @@ const GeneralButton = ({
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 14,
-    boxShadow: "0px 8px 12px rgba(0, 0, 0, 0.2)",
-    elevation: 8,
-    backgroundColor: "transparent",
-  },
-  fullWidth: {
-    width: "100%",
-  },
-  pressable: {
-    borderRadius: 14,
-    overflow: "hidden",
-    // No padding here!
-  },
-  gradient: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    width: "100%", // Ensures gradient fills the pressable width
-  },
-  text: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textAlign: "center",
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});
 
 export default GeneralButton;

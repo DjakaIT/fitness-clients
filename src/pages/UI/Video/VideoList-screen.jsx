@@ -1,7 +1,8 @@
 import VideoCard from "../../../components/VideoCard";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getVideosByCategory } from "../../../../backend/data/videos";
+import { styles } from "../../../styles/UI/VideoStyles/StylesVideoList";
 
 export default function VideoScreen({ route, navigation }) {
   const { category } = route.params;
@@ -32,17 +33,3 @@ export default function VideoScreen({ route, navigation }) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  separator: {
-    height: 20,
-  },
-  listContent: {
-    paddingTop: 20,
-    paddingBottom: 100, // enough space to clear the BottomBar
-  },
-});

@@ -1,18 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from "react-native";
+import { View, Text, TouchableOpacity, Animated } from "react-native";
 
 import { House, VideoCamera, User } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import styles from "../styles/Components/StylesBottomBar";
 
 const PRIMARY = "#6366F1";
 const INACTIVE = "#94A3B8";
-const BACKGROUND = "#FFFFFF";
 
 const TabItem = ({ label, Icon, isActive, onPress }) => {
   const scale = useRef(new Animated.Value(1)).current;
@@ -97,33 +91,3 @@ const BottomBar = ({ state, navigation }) => {
 };
 
 export default BottomBar;
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: BACKGROUND,
-    paddingTop: 14,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 20,
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-});
