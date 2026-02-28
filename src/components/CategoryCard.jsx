@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, Text, View, Image } from "react-native";
-import { styles } from "../styles/StylesWelcomeScreen";
+import { styles } from "../styles/Components/StylesCategoryCard";
 import { CATEGORY_CONFIG } from "../utils/categoryConfig";
 
 export default function CategoryCard({ name, categoryKey, onPress }) {

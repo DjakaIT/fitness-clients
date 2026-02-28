@@ -1,4 +1,13 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
+
+const { width } = Dimensions.get("window");
+
+const colors = {
+  bgDeep: "#4b0622",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#DBC1C9",
+  btnStart: "#F497BA",
+};
 
 export const styles = StyleSheet.create({
   mainContainer: {

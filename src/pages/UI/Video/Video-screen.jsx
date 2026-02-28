@@ -2,7 +2,7 @@ import React from "react";
 import { View, Dimensions, Text, ScrollView } from "react-native";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../../styles/VideoStyles/StylesVideoScreen";
+import { styles } from "../../../styles/UI/VideoStyles/StylesVideoScreen";
 
 const { width } = Dimensions.get("window");
 const PLAYER_HEIGHT = (width * 9) / 16;
