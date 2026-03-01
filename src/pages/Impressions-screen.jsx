@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   subMessage: { fontSize: 15, color: "#6B7280", marginTop: 10 },
   submitBtn: {
-    backgroundColor: "#A78BFA",
+    backgroundColor: "#8B5CF6",
     flexDirection: "row",
     padding: 18,
     borderRadius: 16,
