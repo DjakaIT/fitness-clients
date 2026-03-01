@@ -58,7 +58,7 @@ const BottomBar = ({ state, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom || 16 }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
       {state.routes.map((route, index) => {
         const config = tabConfig[route.name];
         if (!config) return null;

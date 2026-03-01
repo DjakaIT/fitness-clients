@@ -10,6 +10,6 @@ export const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 20,
-    paddingBottom: 100, // enough space to clear the BottomBar
+    paddingBottom: 20, // enough space to clear the BottomBar
   },
 });

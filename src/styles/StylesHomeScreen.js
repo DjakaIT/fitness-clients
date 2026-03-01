@@ -58,18 +58,23 @@ export const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
     marginBottom: 15,
+    width: "100%",
   },
   cardTitle: {
     fontSize: 18,
     fontFamily: "LatoBold",
     color: colors.textPrimary,
+    flexShrink: 1,
+    paddingRight: 12,
   },
   percentText: {
     fontSize: 24,
     fontFamily: "LatoBold",
     color: colors.accentPink,
+    minWidth: 56,
+    textAlign: "right",
   },
 
   // Progress Bar

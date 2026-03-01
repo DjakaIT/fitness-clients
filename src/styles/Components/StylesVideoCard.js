@@ -1,14 +1,13 @@
 import { StyleSheet } from "react-native";
-import { colors } from "../theme";
 
 export const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 20, // space from screen edges
+    paddingHorizontal: 20,
   },
 
   card: {
     flexDirection: "row",
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#FFFFFF",
     borderRadius: 28,
     padding: 14,
     boxShadow: `0px 18px 30px rgba(233, 216, 245, 0.35)`,
@@ -36,7 +35,7 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontFamily: "LatoBold",
-    color: colors.title,
+    color: "#3B0F2E",
     letterSpacing: -0.3,
   },
 
@@ -44,7 +43,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: colors.button,
+    backgroundColor: "#E9A6B2",
     paddingVertical: 12,
     paddingHorizontal: 22,
     borderRadius: 999,
