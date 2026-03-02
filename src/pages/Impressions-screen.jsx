@@ -20,7 +20,7 @@ import ImpressionsBox from "../components/ImpressionBox";
 import ProfilePageComponent from "../components/ProfilePageComponent";
 import { useAuth } from "../context/AuthContext";
 
-const ImpressionsScreen = () => {
+const ImpressionsScreen = ({ navigation }) => {
   const [ratings, setRatings] = useState({ training: 4, eating: 3, comms: 5 });
   const [reflection, setReflection] = useState("");
   const { user } = useAuth();
@@ -33,7 +33,7 @@ const ImpressionsScreen = () => {
       >
         {/* Header Navigation */}
         <View style={styles.navBar}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <CaretLeft color="#000" size={28} weight="bold" />
           </TouchableOpacity>
           <ProfilePageComponent />
