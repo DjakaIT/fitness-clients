@@ -6,7 +6,10 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Image,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import {
   CaretLeft,
@@ -27,72 +30,77 @@ const ImpressionsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.safeArea}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.container}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        {/* Header Navigation */}
-        <View style={styles.navBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <CaretLeft color="#000" size={28} weight="bold" />
-          </TouchableOpacity>
-          <ProfilePageComponent />
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.container}
+        >
+          {/* Header Navigation */}
+          <View style={styles.navBar}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <CaretLeft color="#000" size={28} weight="bold" />
+            </TouchableOpacity>
+            <ProfilePageComponent />
+          </View>
 
-        {/* Hero Text */}
-        <View style={styles.titleSection}>
-          <Text style={styles.userName}>
-            {user?.displayName?.split(" ")[0] || userData.name},
-          </Text>
-          <Text style={styles.mainTitle}>
-            kako ti je prošao protekli tjedan?
-          </Text>
-          <Text style={styles.subMessage}>
-            Izdvoji trenutak da skupa sagledamo tvoj dojam.
-          </Text>
-        </View>
+          {/* Hero Text */}
+          <View style={styles.titleSection}>
+            <Text style={styles.userName}>
+              {user?.displayName?.split(" ")[0] || userData.name},
+            </Text>
+            <Text style={styles.mainTitle}>
+              kako ti je prošao protekli tjedan?
+            </Text>
+            <Text style={styles.subMessage}>
+              Izdvoji trenutak da skupa sagledamo tvoj dojam.
+            </Text>
+          </View>
 
-        {/* Cards Section */}
-        <ImpressionsRatingCard
-          title="Trening"
-          subtitle="Volumen, intenzitet i izvedba"
-          icon={Barbell}
-          backgroundColor="#F0E7FF"
-          rating={ratings.training}
-          setRating={(v) => setRatings({ ...ratings, training: v })}
-        />
-
-        <ImpressionsRatingCard
-          title="Hrana"
-          subtitle="Nutritivna kvaliteta i vremensko planiranje"
-          icon={ForkKnife}
-          backgroundColor="#FFF7ED"
-          rating={ratings.eating}
-          setRating={(v) => setRatings({ ...ratings, eating: v })}
-        />
-
-        <ImpressionsRatingCard
-          title="Komunikacija"
-          subtitle="Učestalost i jasnoća"
-          icon={ChatCircle}
-          backgroundColor="#F0F9FF"
-          rating={ratings.comms}
-          setRating={(v) => setRatings({ ...ratings, comms: v })}
-        />
-
-        <ImpressionsBox value={reflection} onChangeText={setReflection} />
-
-        {/* Submit Button */}
-        <TouchableOpacity style={styles.submitBtn}>
-          <PaperPlaneTilt
-            color="#FFF"
-            size={20}
-            weight="fill"
-            style={{ marginRight: 8 }}
+          {/* Cards Section */}
+          <ImpressionsRatingCard
+            title="Trening"
+            subtitle="Volumen, intenzitet i izvedba"
+            icon={Barbell}
+            backgroundColor="#F0E7FF"
+            rating={ratings.training}
+            setRating={(v) => setRatings({ ...ratings, training: v })}
           />
-          <Text style={styles.btnText}>Pošalji</Text>
-        </TouchableOpacity>
-      </ScrollView>
+
+          <ImpressionsRatingCard
+            title="Hrana"
+            subtitle="Nutritivna kvaliteta i vremensko planiranje"
+            icon={ForkKnife}
+            backgroundColor="#FFF7ED"
+            rating={ratings.eating}
+            setRating={(v) => setRatings({ ...ratings, eating: v })}
+          />
+
+          <ImpressionsRatingCard
+            title="Komunikacija"
+            subtitle="Učestalost i jasnoća"
+            icon={ChatCircle}
+            backgroundColor="#F0F9FF"
+            rating={ratings.comms}
+            setRating={(v) => setRatings({ ...ratings, comms: v })}
+          />
+
+          <ImpressionsBox value={reflection} onChangeText={setReflection} />
+
+          {/* Submit Button */}
+          <TouchableOpacity style={styles.submitBtn}>
+            <PaperPlaneTilt
+              color="#FFF"
+              size={20}
+              weight="fill"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.btnText}>Pošalji</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
