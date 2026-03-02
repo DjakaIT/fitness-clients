@@ -10,7 +10,10 @@ const Tab = createBottomTabNavigator();
 export default function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        animation: "fade", // smooth crossfade between tabs
+      }}
       tabBar={(props) => <BottomBar {...props} />}
       backBehavior="history"
     >
