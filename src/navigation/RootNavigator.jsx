@@ -2,9 +2,10 @@ import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
 import TabNavigator from "./TabNavigator";
+import AdminNavigator from "./AdminNavigator";
 
 export default function RootNavigator() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isAdmin } = useAuth();
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -12,5 +13,14 @@ export default function RootNavigator() {
       </View>
     );
   }
-  return isAuthenticated ? <TabNavigator /> : <AuthNavigator />;
+
+  return isAuthenticated ? (
+    isAdmin ? (
+      <AdminNavigator />
+    ) : (
+      <TabNavigator />
+    )
+  ) : (
+    <AuthNavigator />
+  );
 }

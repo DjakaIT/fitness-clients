@@ -6,16 +6,18 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const AuthContext = createContext(null);
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_EMAIL = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        const roleBadge = firebaseUser.email === ADMIN_EMAIL ? "admin" : "user";
         try {
           const userRef = doc(db, "users", firebaseUser.uid);
           const userSnap = await getDoc(userRef);
@@ -28,6 +30,7 @@ export function AuthProvider({ children }) {
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
+                role: roleBadge,
                 createdAt: serverTimestamp(),
                 lastLogin: serverTimestamp(),
               },
@@ -36,7 +39,10 @@ export function AuthProvider({ children }) {
           } else {
             await setDoc(
               userRef,
-              { lastLogin: serverTimestamp() },
+              {
+                role: roleBadge,
+                lastLogin: serverTimestamp(),
+              },
               { merge: true },
             );
           }
@@ -48,6 +54,7 @@ export function AuthProvider({ children }) {
             photoURL: firebaseUser.photoURL,
           });
           setIsAuthenticated(true);
+          setIsAdmin(firebaseUser.email === ADMIN_EMAIL);
         } catch (error) {
           console.error("Error fetching user data:", error);
           setUser({
@@ -61,6 +68,7 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -79,7 +87,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, logout, loading }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, logout, loading, isAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   );
