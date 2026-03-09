@@ -22,11 +22,35 @@ import ImpressionsRatingCard from "../components/ImpressionRatingCard";
 import ImpressionsBox from "../components/ImpressionBox";
 import ProfilePageComponent from "../components/ProfilePageComponent";
 import { useAuth } from "../context/AuthContext";
+import { useReviews } from "../hooks/useReviews";
 
 const ImpressionsScreen = ({ navigation }) => {
-  const [ratings, setRatings] = useState({ training: 4, eating: 3, comms: 5 });
+  const [ratings, setRatings] = useState({
+    training: 3,
+    eating: 4,
+    communication: 5,
+  });
   const [reflection, setReflection] = useState("");
   const { user } = useAuth();
+
+  const { submitReview, isSubmitting } = useReviews();
+
+  const handleSubmitting = async () => {
+    const response = await submitReview(
+      user.uid,
+      user.displayName,
+      ratings,
+      reflection,
+    );
+
+    if (response.success) {
+      navigation.goBack();
+      setRatings({ training: 0, eating: 0, communication: 0 });
+      setReflection("");
+    } else {
+      Alert.alert("Greška", "Došlo je do problema prilikom slanja dojma.");
+    }
+  };
 
   return (
     <View style={styles.safeArea}>
@@ -83,21 +107,27 @@ const ImpressionsScreen = ({ navigation }) => {
             subtitle="Učestalost i jasnoća"
             icon={ChatCircle}
             backgroundColor="#F0F9FF"
-            rating={ratings.comms}
-            setRating={(v) => setRatings({ ...ratings, comms: v })}
+            rating={ratings.communication}
+            setRating={(v) => setRatings({ ...ratings, communication: v })}
           />
 
           <ImpressionsBox value={reflection} onChangeText={setReflection} />
 
           {/* Submit Button */}
-          <TouchableOpacity style={styles.submitBtn}>
+          <TouchableOpacity
+            style={[styles.submitBtn, isSubmitting && { opacity: 0.6 }]}
+            onPress={handleSubmitting}
+            disabled={isSubmitting}
+          >
             <PaperPlaneTilt
               color="#FFF"
               size={20}
               weight="fill"
               style={{ marginRight: 8 }}
             />
-            <Text style={styles.btnText}>Pošalji</Text>
+            <Text style={styles.btnText}>
+              {isSubmitting ? "Slanje dojma..." : "Pošalji"}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
