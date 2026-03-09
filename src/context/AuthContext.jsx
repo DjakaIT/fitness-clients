@@ -6,6 +6,8 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const AuthContext = createContext(null);
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
