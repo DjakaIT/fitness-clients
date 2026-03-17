@@ -6,17 +6,19 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
 import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
+import UserCard from "../../components/UserCard";
 
 export default function AdminUserListScreen() {
   const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const queryUsers = query(
           collection(db, "users"),
-          where("role", "==", "admin"),
+          where("role", "==", "user"),
         );
         const querySnapshot = await getDocs(queryUsers);
         const userList = querySnapshot.docs.map((user) => ({
@@ -42,25 +44,26 @@ export default function AdminUserListScreen() {
   }
 
   const renderUserCard = ({ item }) => (
-    <View style={{ padding: 16, borderBottomWidth: 1, borderColor: "#ccc" }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-        {item.displayName}
-      </Text>
-      <Text style={{ color: "#666" }}>{item.email}</Text>
-    </View>
+    <UserCard
+      displayName={item.displayName}
+      photoUrl={item.photoURL}
+      lastLogin={item.lastLogin}
+      onPress={() =>
+        navigation.navigate("AdminUserImpression", { userId: item.id })
+      }
+    />
   );
-  const navigation = useNavigation();
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Korisnici</Text>
+    <View style={{ flex: 1 }}>
+      <Text style={{ paddingHorizontal: 16, marginTop: 16 }}>Korisnici</Text>
+
       <FlatList
         data={users}
         keyExtractor={(item) => item.id}
         renderItem={renderUserCard}
+        style={{ width: "100%" }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
       />
-      <GeneralButton onPress={() => navigation.navigate("AdminUserImpression")}>
-        PREGLED KORISNIKA
-      </GeneralButton>
     </View>
   );
 }

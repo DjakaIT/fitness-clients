@@ -90,7 +90,7 @@ export default function ProfilePageComponent() {
         <TouchableOpacity onPress={openModal} activeOpacity={0.7}>
           <Image
             source={{
-              uri: user?.photoURL || "https://i.pravatar.cc/150?img=5",
+              uri: user?.photoURL,
             }}
             style={styles.profileImage}
           />
@@ -109,14 +109,12 @@ export default function ProfilePageComponent() {
           <Pressable style={styles.backdropPressable} onPress={closeModal} />
         </Animated.View>
 
-        {/* Modal content - centered overlay */}
         <View style={styles.modalCentering}>
           <Animated.View style={[styles.modalContainer, modalAnimatedStyle]}>
             <LinearGradient
               colors={["rgba(101, 75, 85, 0.97)", "rgba(75, 6, 34, 0.97)"]}
               style={styles.modalGradient}
             >
-              {/* Close X */}
               <TouchableOpacity
                 onPress={closeModal}
                 style={styles.modalCloseBtn}
@@ -129,7 +127,7 @@ export default function ProfilePageComponent() {
               <View style={styles.modalUserSection}>
                 <Image
                   source={{
-                    uri: user?.photoURL || "https://i.pravatar.cc/150?img=5",
+                    uri: user?.photoURL,
                   }}
                   style={styles.modalAvatar}
                 />
@@ -141,9 +139,7 @@ export default function ProfilePageComponent() {
 
               <View style={styles.modalDivider} />
 
-              {/* Action buttons */}
               <View style={styles.modalActions}>
-                {/* Profile */}
                 <TouchableOpacity
                   onPress={handleProfile}
                   activeOpacity={0.7}
@@ -171,7 +167,6 @@ export default function ProfilePageComponent() {
                   </LinearGradient>
                 </TouchableOpacity>
 
-                {/* Sign out */}
                 <TouchableOpacity
                   onPress={handleLogout}
                   activeOpacity={0.7}
@@ -202,7 +197,6 @@ export default function ProfilePageComponent() {
                 </TouchableOpacity>
               </View>
 
-              {/* Bottom accent line */}
               <LinearGradient
                 colors={[colors.accentPink, "#F2829E", "transparent"]}
                 start={{ x: 0, y: 0 }}
