@@ -7,6 +7,9 @@ import { db } from "../../../backend/config/firebase";
 import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import UserCard from "../../components/UserCard";
+import FilterButton from "../../components/FilterButton";
+import SearchBar from "../../components/SearchBar";
+import formatClientNumber from "../../../backend/utils/clientNumberUtil";
 
 export default function AdminUserListScreen() {
   const [users, setUsers] = React.useState([]);
@@ -55,7 +58,12 @@ export default function AdminUserListScreen() {
   );
   return (
     <View style={{ flex: 1 }}>
-      <Text style={{ paddingHorizontal: 16, marginTop: 16 }}>Korisnici</Text>
+      <Text style={{ paddingHorizontal: 16, marginTop: 16 }}>
+        Tvoje klijentice
+      </Text>
+      <Text style={{ paddingHorizontal: 16, marginTop: 16 }}>
+        Marta, trenutno s tobom napreduje {formatClientNumber(users.length)}
+      </Text>
 
       <FlatList
         data={users}
