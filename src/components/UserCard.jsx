@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, Image, Pressable, Animated, Platform } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../styles/Components/StylesUserCard";
 import formatDate from "../../backend/utils/dateUtil";
 
@@ -10,7 +9,7 @@ export default function UserCard({
   displayName,
   photoUrl,
   lastLogin,
-  buttonLabel = "Pregled klijentice",
+  buttonLabel = "Pogledaj",
   onPress,
 }) {
   const animatedScale = React.useRef(new Animated.Value(1)).current;
@@ -32,50 +31,38 @@ export default function UserCard({
   };
 
   return (
-    <Animated.View
-      style={[styles.card, { transform: [{ scale: animatedScale }] }]}
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
     >
-      <View style={styles.left}>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Text style={styles.avatarInitial}>
-              {displayName?.charAt(0)?.toUpperCase()}
-            </Text>
-          </View>
-        )}
-        <View style={styles.info}>
-          <Text style={styles.displayName}>{displayName}</Text>
-          {!!lastLogin && (
-            <Text style={styles.subtitle}>
-              Posljednja prijava: {formatDate(lastLogin)}
-            </Text>
-          )}
-        </View>
-      </View>
-
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.buttonPressable}
+      <Animated.View
+        style={[styles.card, { transform: [{ scale: animatedScale }] }]}
       >
-        <LinearGradient
-          colors={["#F97316", "#EA580C"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.button}
-        >
-          <Text
-            style={styles.buttonText}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {buttonLabel}
-          </Text>
-        </LinearGradient>
-      </Pressable>
-    </Animated.View>
+        <View style={styles.left}>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarInitial}>
+                {displayName?.charAt(0)?.toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.info}>
+            <Text style={styles.displayName} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {!!lastLogin && (
+              <Text style={styles.subtitle}>{formatDate(lastLogin)}</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.action}>
+          <Text style={styles.actionText}>{buttonLabel}</Text>
+        </View>
+      </Animated.View>
+    </Pressable>
   );
 }
