@@ -6,7 +6,6 @@ export const styles = StyleSheet.create({
   background: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: 24 },
 
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -46,7 +45,6 @@ export const styles = StyleSheet.create({
     borderColor: colors.bgDeep,
   },
 
-  // Glass Card
   glassCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 24,
@@ -122,7 +120,6 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.cardBorder,
   },
 
-  // Buttons
   buttonStack: {
     gap: 15,
   },

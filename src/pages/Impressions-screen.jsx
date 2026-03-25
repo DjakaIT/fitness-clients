@@ -62,7 +62,6 @@ const ImpressionsScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.container}
         >
-          {/* Header Navigation */}
           <View style={styles.navBar}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <CaretLeft color="#000" size={28} weight="bold" />
@@ -70,7 +69,6 @@ const ImpressionsScreen = ({ navigation }) => {
             <ProfilePageComponent />
           </View>
 
-          {/* Hero Text */}
           <View style={styles.titleSection}>
             <Text style={styles.userName}>
               {user?.displayName?.split(" ")[0] || userData.name},
@@ -151,7 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: "#10B981",
-  }, // Green dot indicator
+  },
   titleSection: { marginBottom: 30 },
   userName: { fontSize: 32, fontWeight: "900", color: "#000" },
   mainTitle: {

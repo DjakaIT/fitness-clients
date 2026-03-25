@@ -9,7 +9,7 @@ export default function UserCard({
   displayName,
   photoUrl,
   lastLogin,
-  buttonLabel = "Pogledaj",
+  buttonLabel = "Pregled klijentice",
   onPress,
 }) {
   const animatedScale = React.useRef(new Animated.Value(1)).current;
@@ -43,9 +43,9 @@ export default function UserCard({
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <View style={[styles.placeholderAvatar, styles.avatar]}>
               <Text style={styles.avatarInitial}>
-                {displayName?.charAt(0)?.toUpperCase()}
+                {displayName ? displayName.charAt(0).toUpperCase() : "..."}
               </Text>
             </View>
           )}
@@ -53,12 +53,15 @@ export default function UserCard({
             <Text style={styles.displayName} numberOfLines={1}>
               {displayName}
             </Text>
-            {!!lastLogin && (
-              <Text style={styles.subtitle}>{formatDate(lastLogin)}</Text>
-            )}
+            <Text style={styles.subtitle}>
+              {lastLogin ? (
+                <Text style={styles.subtitle}>
+                  Zadnja prijava: {formatDate(lastLogin)}
+                </Text>
+              ) : null}
+            </Text>
           </View>
         </View>
-
         <View style={styles.action}>
           <Text style={styles.actionText}>{buttonLabel}</Text>
         </View>

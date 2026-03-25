@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Text,
-  View,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { React, useEffect, useState, useMemo } from "react";
+import { Text, View, FlatList, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
-import { useAuth } from "../../context/AuthContext";
 import UserCard from "../../components/UserCard";
-import SearchBar from "../../components/SearchBar";
 import FilterButton from "../../components/FilterButton";
+import SearchBar from "../../components/SearchBar";
 import formatClientNumber from "../../../backend/utils/clientNumberUtil";
+import { useAuth } from "../../context/AuthContext";
+import { styles } from "../../styles/Admin/StylesAdminUserListScreen";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AdminUserListScreen() {
   const [users, setUsers] = useState([]);
@@ -23,7 +18,7 @@ export default function AdminUserListScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
 
-  const firstName = user?.displayName?.split(" ")[0] || "Marta";
+  const firstName = user?.displayName?.split(" ")[0] || "...";
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -33,9 +28,9 @@ export default function AdminUserListScreen() {
           where("role", "==", "user"),
         );
         const querySnapshot = await getDocs(queryUsers);
-        const userList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const userList = querySnapshot.docs.map((user) => ({
+          id: user.id,
+          ...user.data(),
         }));
         setUsers(userList);
       } catch (error) {
@@ -48,14 +43,19 @@ export default function AdminUserListScreen() {
   }, []);
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
     const q = searchQuery.toLowerCase();
-    return users.filter((u) => u.displayName?.toLowerCase().includes(q));
-  }, [users, searchQuery]);
+    if (!searchQuery.trim()) {
+      return users;
+    } else {
+      return users.filter((user) =>
+        user.displayName?.toLowerCase().includes(q),
+      );
+    }
+  }, [searchQuery, users]);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
@@ -71,22 +71,19 @@ export default function AdminUserListScreen() {
       }
     />
   );
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* search and filter, TODO: add filtering logic */}
         <View style={styles.searchRow}>
           <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
           <FilterButton onPress={() => {}} />
         </View>
 
-        <Text style={styles.title}>Tvoje klijentice</Text>
+        <Text style={styles.title}> Tvoje klijentice</Text>
         <Text style={styles.subtitle}>
           <Text style={styles.subtitleHighlight}>{firstName}</Text>, trenutno s
-          tobom napreduje{" "}
-          <Text style={styles.clientNumber}>
-            {formatClientNumber(users.length)}
-          </Text>
+          tobom napreduje {formatClientNumber(users.length)}
         </Text>
 
         <View style={styles.statsRow}>
@@ -100,8 +97,6 @@ export default function AdminUserListScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionHeader}>LISTA KLIJENTICA</Text>
-
         <FlatList
           data={filteredUsers}
           keyExtractor={(item) => item.id}
@@ -114,110 +109,3 @@ export default function AdminUserListScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-
-  // Search
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 24,
-  },
-
-  // Title
-  title: {
-    fontSize: 22,
-    fontFamily: "Outfit_700Bold",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "#6B7280",
-    marginBottom: 20,
-  },
-  subtitleHighlight: {
-    fontFamily: "Inter_600SemiBold",
-    color: "#7C3AED",
-  },
-  clientNumber: {
-    fontFamily: "Inter_600SemiBold",
-    color: "#7C3AED",
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  statCardPrimary: {
-    backgroundColor: "#7C3AED",
-  },
-  statCardLight: {
-    backgroundColor: "#fdf2f6",
-  },
-  statNumberPrimary: {
-    fontSize: 28,
-    fontFamily: "Outfit_700Bold",
-    color: "#FFFFFF",
-    marginBottom: 2,
-  },
-  statLabelPrimary: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255, 255, 255, 0.8)",
-    letterSpacing: 0.8,
-  },
-  statNumberLight: {
-    fontSize: 28,
-    fontFamily: "Outfit_700Bold",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  statLabelLight: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: "#6B7280",
-    letterSpacing: 0.8,
-  },
-
-  // Section Header
-  sectionHeader: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: "#9CA3AF",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-
-  // List
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-});

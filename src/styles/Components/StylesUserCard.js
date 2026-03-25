@@ -50,16 +50,14 @@ export const styles = StyleSheet.create({
   action: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "rgba(124, 58, 237, 0.08)",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
   },
   actionText: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: "#7C3AED",
-  },
-  actionArrow: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: "#7C3AED",
-    marginLeft: 4,
   },
 });
