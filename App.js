@@ -18,6 +18,14 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+} from "@expo-google-fonts/montserrat";
+import {
+  OpenSans_400Regular,
+  OpenSans_600SemiBold,
+} from "@expo-google-fonts/open-sans";
 import { ActivityIndicator, View } from "react-native";
 
 export default function App() {
@@ -30,6 +38,10 @@ export default function App() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
+    OpenSans_400Regular,
+    OpenSans_600SemiBold,
   });
 
   if (!fontsLoaded) {
