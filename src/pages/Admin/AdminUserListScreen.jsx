@@ -10,37 +10,15 @@ import formatClientNumber from "../../../backend/utils/clientNumberUtil";
 import { useAuth } from "../../context/AuthContext";
 import { styles } from "../../styles/Admin/StylesAdminUserListScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useFetchUsers from "../../hooks/useFetchUsers";
 
 export default function AdminUserListScreen() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { users, loading } = useFetchUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
   const { user } = useAuth();
 
   const firstName = user?.displayName?.split(" ")[0] || "...";
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const queryUsers = query(
-          collection(db, "users"),
-          where("role", "==", "user"),
-        );
-        const querySnapshot = await getDocs(queryUsers);
-        const userList = querySnapshot.docs.map((user) => ({
-          id: user.id,
-          ...user.data(),
-        }));
-        setUsers(userList);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  }, []);
 
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -67,7 +45,10 @@ export default function AdminUserListScreen() {
       photoUrl={item.photoURL}
       lastLogin={item.lastLogin}
       onPress={() =>
-        navigation.navigate("AdminUserImpression", { userId: item.id })
+        navigation.navigate("AdminUserImpression", {
+          userId: item.id,
+          displayName: item.displayName,
+        })
       }
     />
   );

@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     paddingHorizontal: 32,
-    paddingTop: 80,
+    paddingTop: "35%",
   },
   greeting: {
     fontFamily: "Montserrat_800ExtraBold",

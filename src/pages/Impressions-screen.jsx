@@ -22,7 +22,7 @@ import ImpressionsRatingCard from "../components/ImpressionRatingCard";
 import ImpressionsBox from "../components/ImpressionBox";
 import ProfilePageComponent from "../components/ProfilePageComponent";
 import { useAuth } from "../context/AuthContext";
-import { useReviews } from "../hooks/useReviews";
+import { usePostReviews } from "../hooks/usePostReviews";
 
 const ImpressionsScreen = ({ navigation }) => {
   const [ratings, setRatings] = useState({
@@ -33,7 +33,7 @@ const ImpressionsScreen = ({ navigation }) => {
   const [reflection, setReflection] = useState("");
   const { user } = useAuth();
 
-  const { submitReview, isSubmitting } = useReviews();
+  const { submitReview, isSubmitting } = usePostReviews();
 
   const handleSubmitting = async () => {
     const response = await submitReview(
@@ -111,7 +111,6 @@ const ImpressionsScreen = ({ navigation }) => {
 
           <ImpressionsBox value={reflection} onChangeText={setReflection} />
 
-          {/* Submit Button */}
           <TouchableOpacity
             style={[styles.submitBtn, isSubmitting && { opacity: 0.6 }]}
             onPress={handleSubmitting}

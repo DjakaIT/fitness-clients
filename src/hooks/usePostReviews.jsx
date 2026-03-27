@@ -2,7 +2,7 @@ import { useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
 
-export function useReviews() {
+export function usePostReviews() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submitReview = async (userId, userName, ratings, reflection) => {
