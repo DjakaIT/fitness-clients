@@ -23,6 +23,11 @@ export default function AdminNavigator() {
         component={AdminUserImpressionScreen}
         options={{ title: "User Impression" }}
       />
+      <Admin.Screen
+        name="AdminAppointments"
+        component={AdminAppointmentScreen}
+        options={{ title: "Appointments" }}
+      />
     </Admin.Navigator>
   );
 }

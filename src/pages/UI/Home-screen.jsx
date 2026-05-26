@@ -22,7 +22,7 @@ const colors = {
 };
 
 const userData = {
-  name: "Marta",
+  name: "Klijentica",
   currentWeight: 68.5,
   startWeight: 75.0,
   goalWeight: 62.0,

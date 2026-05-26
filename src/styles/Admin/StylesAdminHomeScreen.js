@@ -6,7 +6,8 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     paddingHorizontal: 32,
-    paddingTop: "35%",
+    paddingTop: 72,
+    paddingBottom: 48,
   },
   greeting: {
     fontFamily: "Montserrat_800ExtraBold",
@@ -21,8 +22,8 @@ export const styles = StyleSheet.create({
     color: "#7C3AED",
   },
   imageWrapper: {
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 20,
+    marginBottom: 12,
     alignItems: "center",
   },
   imageBorder: {
@@ -49,8 +50,8 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 6,
     color: "#9CA3AF",
-    marginTop: 12,
-    marginBottom: 28,
+    marginTop: 10,
+    marginBottom: 20,
   },
   description: {
     fontFamily: "OpenSans_400Regular",
@@ -58,11 +59,13 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 26,
-    marginBottom: 40,
+    marginBottom: 0,
   },
   buttonContainer: {
     width: "100%",
     paddingHorizontal: 8,
+    marginTop: "25%",
+    gap: 16,
   },
   buttonContent: {
     flexDirection: "row",

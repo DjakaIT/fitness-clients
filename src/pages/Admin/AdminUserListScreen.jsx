@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { styles } from "../../styles/Admin/StylesAdminUserListScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useFetchUsers from "../../hooks/useFetchUsers";
+import ProfilePageComponent from "../../components/ProfilePageComponent";
 
 export default function AdminUserListScreen() {
   const { users, loading } = useFetchUsers();
@@ -54,8 +55,8 @@ export default function AdminUserListScreen() {
   );
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ProfilePageComponent />
       <View style={styles.container}>
-        {/* search and filter, TODO: add filtering logic */}
         <View style={styles.searchRow}>
           <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
           <FilterButton onPress={() => {}} />

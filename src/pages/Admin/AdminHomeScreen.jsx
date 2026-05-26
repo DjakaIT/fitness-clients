@@ -38,8 +38,17 @@ export default function AdminHomeScreen() {
           fullWidth
         >
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>Tvoje klijentice</Text>
-            <Text style={styles.buttonArrow}>→</Text>
+            <Text style={styles.buttonText}>Online klijentice</Text>
+          </View>
+        </GeneralButton>
+        <GeneralButton
+          onPress={() => navigation.navigate("AdminUserList")}
+          colors={["#7C3AED", "#7C3AED"]}
+          size="lg"
+          fullWidth
+        >
+          <View style={styles.buttonContent}>
+            <Text style={styles.buttonText}>Uživo klijentice</Text>
           </View>
         </GeneralButton>
       </View>
