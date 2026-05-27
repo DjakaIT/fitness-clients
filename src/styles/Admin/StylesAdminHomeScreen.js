@@ -83,4 +83,32 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     color: "#FFFFFF",
   },
+  notificationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(124, 58, 237, 0.12)",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.3)",
+  },
+  notificationDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#F497BA",
+    marginRight: 12,
+  },
+  notificationTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+  },
+  notificationSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
 });

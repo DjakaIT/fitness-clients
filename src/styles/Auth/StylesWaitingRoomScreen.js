@@ -1,0 +1,62 @@
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+  gradient: { flex: 1 },
+  safeArea: { flex: 1 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  brand: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 32,
+    fontFamily: "Outfit_700Bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    color: "#DBC1C9",
+    textAlign: "center",
+    lineHeight: 26,
+  },
+  highlight: { fontFamily: "Inter_600SemiBold", color: "#F497BA" },
+  typeRow: { flexDirection: "row", gap: 16, marginTop: 32 },
+  typeCard: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 20,
+    paddingVertical: 28,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.20)",
+  },
+  typeIcon: { fontSize: 36, marginBottom: 10 },
+  typeLabel: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+  spinnerWrap: { marginTop: 40 },
+  logoutBtn: {
+    position: "absolute",
+    bottom: 40,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  logoutText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#DBC1C9" },
+});

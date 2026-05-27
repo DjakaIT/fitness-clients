@@ -101,4 +101,43 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 24,
   },
+
+  // Pending Card
+  pendingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  pendingInfo: { flex: 1 },
+  pendingName: {
+    fontSize: 15,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: "#111827",
+  },
+  pendingMeta: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  pendingBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  approveBtn: { backgroundColor: "rgba(52, 211, 153, 0.12)" },
+  approveBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#059669",
+  },
+  rejectBtn: { backgroundColor: "rgba(239, 68, 68, 0.10)" },
+  rejectBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#DC2626",
+  },
 });

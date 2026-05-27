@@ -3,6 +3,7 @@ import { sharedScreenOptions } from "./navigationConfig";
 import AdminHomeScreen from "../pages/Admin/AdminHomeScreen";
 import AdminUserListScreen from "../pages/Admin/AdminUserListScreen";
 import AdminUserImpressionScreen from "../pages/Admin/AdminUserImpressionScreen";
+import AdminInPersonScreen from "../pages/Admin/AdminInPersonScreen";
 
 export default function AdminNavigator() {
   const Admin = createNativeStackNavigator();
@@ -24,9 +25,9 @@ export default function AdminNavigator() {
         options={{ title: "User Impression" }}
       />
       <Admin.Screen
-        name="AdminAppointments"
-        component={AdminAppointmentScreen}
-        options={{ title: "Appointments" }}
+        name="AdminInPerson"
+        component={AdminInPersonScreen}
+        options={{ title: "Uživo klijentice" }}
       />
     </Admin.Navigator>
   );

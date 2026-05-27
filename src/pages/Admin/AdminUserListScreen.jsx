@@ -1,5 +1,11 @@
 import { React, useEffect, useState, useMemo } from "react";
-import { Text, View, FlatList, ActivityIndicator } from "react-native";
+import {
+  Text,
+  View,
+  FlatList,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
@@ -12,9 +18,11 @@ import { styles } from "../../styles/Admin/StylesAdminUserListScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useFetchUsers from "../../hooks/useFetchUsers";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
+import usePendingUsers from "../../hooks/usePendingUsers";
+import useUpdateUserStatus from "../../hooks/useUpdateUserStatus";
 
 export default function AdminUserListScreen() {
-  const { users, loading } = useFetchUsers();
+  const { users, loading } = useFetchUsers("online");
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
   const { user } = useAuth();
@@ -31,6 +39,9 @@ export default function AdminUserListScreen() {
       );
     }
   }, [searchQuery, users]);
+
+  const { pendingUsers } = usePendingUsers();
+  const { updateStatus, isUpdating } = useUpdateUserStatus();
 
   if (loading) {
     return (
@@ -62,7 +73,7 @@ export default function AdminUserListScreen() {
           <FilterButton onPress={() => {}} />
         </View>
 
-        <Text style={styles.title}> Tvoje klijentice</Text>
+        <Text style={styles.title}> Online klijentice</Text>
         <Text style={styles.subtitle}>
           <Text style={styles.subtitleHighlight}>{firstName}</Text>, trenutno s
           tobom napreduje {formatClientNumber(users.length)}
@@ -87,6 +98,39 @@ export default function AdminUserListScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+        {pendingUsers.length > 0 && (
+          <View>
+            <Text style={styles.sectionHeader}>ZAHTJEVI ZA PRISTUP</Text>
+            {pendingUsers.map((pending) => (
+              <View key={pending.id} style={styles.pendingCard}>
+                <View style={styles.pendingInfo}>
+                  <Text style={styles.pendingName}>{pending.displayName}</Text>
+                  <Text style={styles.pendingMeta}>
+                    {pending.trainingType === "online"
+                      ? "💻 Online"
+                      : pending.trainingType === "in_person"
+                        ? "🏋️ Osobno"
+                        : "Tip nije odabran"}
+                  </Text>
+                </View>
+                <Pressable
+                  style={[styles.pendingBtn, styles.approveBtn]}
+                  onPress={() => updateStatus(pending.id, "active")}
+                  disabled={isUpdating}
+                >
+                  <Text style={styles.approveBtnText}>Odobri</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.pendingBtn, styles.rejectBtn]}
+                  onPress={() => updateStatus(pending.id, "rejected")}
+                  disabled={isUpdating}
+                >
+                  <Text style={styles.rejectBtnText}>Odbij</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
