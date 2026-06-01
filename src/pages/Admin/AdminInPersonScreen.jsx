@@ -1,12 +1,21 @@
 import React from "react";
-import { View, Text, FlatList, ActivityIndicator, Image } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  Pressable,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import useFetchInPersonUsers from "../../hooks/useFetchInPersonUsers";
 import { styles } from "../../styles/Admin/StylesAdminInPersonScreen";
 
 export default function AdminInPersonScreen() {
-  const { users, loading } = useFetchInPersonUsers("in_person");
+  const { users, loading } = useFetchInPersonUsers();
+  const navigation = useNavigation();
 
   if (loading) {
     return (
@@ -17,7 +26,15 @@ export default function AdminInPersonScreen() {
   }
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <Pressable
+      style={styles.card}
+      onPress={() =>
+        navigation.navigate("AdminClientSchedule", {
+          userId: item.id,
+          displayName: item.displayName,
+        })
+      }
+    >
       {item.photoURL ? (
         <Image source={{ uri: item.photoURL }} style={styles.avatar} />
       ) : (
@@ -31,7 +48,8 @@ export default function AdminInPersonScreen() {
         <Text style={styles.name}>{item.displayName}</Text>
         <Text style={styles.meta}>🏋️ Osobni trening</Text>
       </View>
-    </View>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
   );
 
   return (
@@ -42,9 +60,8 @@ export default function AdminInPersonScreen() {
         <Text style={styles.subtitle}>
           {users.length === 0
             ? "Trenutno nema klijentica na osobnom treningu."
-            : `${users.length} klijentica dolazi osobno`}
+            : `${users.length} klijentic${users.length === 1 ? "a" : "e"} dolazi osobno`}
         </Text>
-
         <FlatList
           data={users}
           keyExtractor={(item) => item.id}

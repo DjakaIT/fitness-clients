@@ -3,10 +3,11 @@ import { useAuth } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
 import TabNavigator from "./TabNavigator";
 import AdminNavigator from "./AdminNavigator";
+import InPersonNavigator from "./InPersonNavigator";
 import WaitingRoomScreen from "../pages/Auth/WaitingRoom-screen";
 
 export default function RootNavigator() {
-  const { isAuthenticated, loading, isAdmin, status } = useAuth();
+  const { isAuthenticated, loading, isAdmin, status, trainingType } = useAuth();
 
   if (loading) {
     return (
@@ -20,5 +21,6 @@ export default function RootNavigator() {
   if (isAdmin) return <AdminNavigator />;
   if (status === "pending" || status === "rejected")
     return <WaitingRoomScreen />;
+  if (trainingType === "in_person") return <InPersonNavigator />;
   return <TabNavigator />;
 }
