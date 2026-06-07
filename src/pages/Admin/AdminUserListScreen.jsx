@@ -7,8 +7,6 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../../backend/config/firebase";
 import UserCard from "../../components/UserCard";
 import FilterButton from "../../components/FilterButton";
 import SearchBar from "../../components/SearchBar";
@@ -39,6 +37,23 @@ export default function AdminUserListScreen() {
       );
     }
   }, [searchQuery, users]);
+
+  const activeUsers = users.filter((user) => user.status === "active");
+
+  const getClientForm = (count) => {
+    if (count === 0 || count === 1 || count >= 5) {
+      return "Klijentica";
+    }
+    const lastDigit = count % 10;
+    const lastTwoDigits = count % 100;
+    if (
+      (lastDigit === 2 || lastDigit === 3 || lastDigit === 4) &&
+      (lastTwoDigits < 10 || lastTwoDigits > 20)
+    ) {
+      return "Klijentice";
+    }
+    return "Klijentica";
+  };
 
   const { pendingUsers } = usePendingUsers();
   const { updateStatus, isUpdating } = useUpdateUserStatus();
@@ -76,17 +91,31 @@ export default function AdminUserListScreen() {
         <Text style={styles.title}> Online klijentice</Text>
         <Text style={styles.subtitle}>
           <Text style={styles.subtitleHighlight}>{firstName}</Text>, trenutno s
-          tobom napreduje {formatClientNumber(users.length)}
+          tobom napreduje {formatClientNumber(users.length)}{" "}
         </Text>
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
             <Text style={styles.statNumberPrimary}>{users.length}</Text>
-            <Text style={styles.statLabelPrimary}>KLIJENTICA UKUPNO</Text>
+            <Text style={styles.statLabelPrimary}>
+              {formatClientNumber(users.length)
+                .split(" ")
+                .slice(1)
+                .join(" ")
+                .toUpperCase()}{" "}
+              UKUPNO
+            </Text>
           </View>
           <View style={[styles.statCard, styles.statCardLight]}>
-            <Text style={styles.statNumberLight}>{users.length}</Text>
-            <Text style={styles.statLabelLight}>KLIJENTICA TRENUTNO</Text>
+            <Text style={styles.statNumberLight}>{activeUsers.length}</Text>
+            <Text style={styles.statLabelLight}>
+              {formatClientNumber(activeUsers.length)
+                .split(" ")
+                .slice(1)
+                .join(" ")
+                .toUpperCase()}{" "}
+              TRENUTNO
+            </Text>
           </View>
         </View>
 
