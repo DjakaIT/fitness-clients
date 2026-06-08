@@ -47,4 +47,16 @@ export const styles = StyleSheet.create({
     color: "#9CA3AF",
     marginTop: 2,
   },
+  list: {
+    flex: 1,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  actionButton: {
+    flex: 1,
+  },
 });

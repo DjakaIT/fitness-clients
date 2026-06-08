@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import useFetchInPersonUsers from "../../hooks/useFetchInPersonUsers";
 import { styles } from "../../styles/Admin/StylesAdminInPersonScreen";
+import GeneralButton from "../../components/GeneralButton";
 
 export default function AdminInPersonScreen() {
   const { users, loading } = useFetchInPersonUsers();
@@ -62,13 +63,34 @@ export default function AdminInPersonScreen() {
             ? "Trenutno nema klijentica na osobnom treningu."
             : `${users.length} klijentic${users.length === 1 ? "a" : "e"} dolazi osobno`}
         </Text>
+
         <FlatList
           data={users}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          style={styles.list}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+        <View style={styles.actionsRow}>
+          <GeneralButton
+            size="sm"
+            style={styles.actionButton}
+            colors={["#7C3AED", "#7C3AED"]}
+            onPress={() => navigation.navigate("AdminTrainerTime")}
+          >
+            Uredi vrijeme
+          </GeneralButton>
+
+          <GeneralButton
+            size="sm"
+            style={styles.actionButton}
+            colors={["#111827", "#111827"]}
+            onPress={() => navigation.navigate("AdminTrainerSavedTime")}
+          >
+            Prikaži vrijeme
+          </GeneralButton>
+        </View>
       </View>
     </SafeAreaView>
   );

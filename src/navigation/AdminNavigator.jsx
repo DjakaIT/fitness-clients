@@ -5,6 +5,8 @@ import AdminUserListScreen from "../pages/Admin/AdminUserListScreen";
 import AdminUserImpressionScreen from "../pages/Admin/AdminUserImpressionScreen";
 import AdminInPersonScreen from "../pages/Admin/AdminInPersonScreen";
 import AdminClientScheduleScreen from "../pages/Admin/AdminClientScheduleScreen";
+import AdminTrainerTimeScreen from "../pages/Admin/AdminTrainerTimeScreen.jsx";
+import AdminTrainerSavedTimeScreen from "../pages/Admin/AdminTrainerSavedTimeScreen";
 
 const Admin = createNativeStackNavigator();
 
@@ -35,6 +37,16 @@ export default function AdminNavigator() {
         name="AdminClientSchedule"
         component={AdminClientScheduleScreen}
         options={{ title: "Raspored" }}
+      />
+      <Admin.Screen
+        name="AdminTrainerTime"
+        component={AdminTrainerTimeScreen}
+        options={{ title: "Dodaj vrijeme" }}
+      />
+      <Admin.Screen
+        name="AdminTrainerSavedTime"
+        component={AdminTrainerSavedTimeScreen}
+        options={{ title: "Spremljeno vrijeme" }}
       />
     </Admin.Navigator>
   );

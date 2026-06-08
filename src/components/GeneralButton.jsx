@@ -60,7 +60,6 @@ const GeneralButton = ({
           colors={disabled ? ["#9CA3AF", "#6B7280"] : colors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          // Keep sizeStyles here so the gradient fills the whole button
           style={[styles.gradient, sizeStyles[size]]}
         >
           {typeof children === "string" ? (
