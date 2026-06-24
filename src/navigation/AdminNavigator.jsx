@@ -7,6 +7,7 @@ import AdminInPersonScreen from "../pages/Admin/AdminInPersonScreen";
 import AdminClientScheduleScreen from "../pages/Admin/AdminClientScheduleScreen";
 import AdminTrainerTimeScreen from "../pages/Admin/AdminTrainerTimeScreen.jsx";
 import AdminTrainerSavedTimeScreen from "../pages/Admin/AdminTrainerSavedTimeScreen";
+import AdminClientGeneralScreen from "../pages/Admin/AdminClientGeneralScreen";
 
 const Admin = createNativeStackNavigator();
 
@@ -47,6 +48,11 @@ export default function AdminNavigator() {
         name="AdminTrainerSavedTime"
         component={AdminTrainerSavedTimeScreen}
         options={{ title: "Spremljeno vrijeme" }}
+      />
+      <Admin.Screen
+        name="AdminClientGeneralScreen"
+        component={AdminClientGeneralScreen}
+        options={{ title: "Opći podaci klijenta" }}
       />
     </Admin.Navigator>
   );

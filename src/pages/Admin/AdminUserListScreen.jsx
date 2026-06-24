@@ -72,7 +72,7 @@ export default function AdminUserListScreen() {
       photoUrl={item.photoURL}
       lastLogin={item.lastLogin}
       onPress={() =>
-        navigation.navigate("AdminUserImpression", {
+        navigation.navigate("AdminClientGeneralScreen", {
           userId: item.id,
           displayName: item.displayName,
         })
