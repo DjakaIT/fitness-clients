@@ -33,13 +33,13 @@ export default function AdminTrainerSavedTimeScreen() {
       }
 
       try {
-        const snapshot = await getDoc(doc(db, "users", user.uid));
+        const snapshot = await getDoc(doc(db, "config", "trainerSchedule"));
 
         if (!isMounted) return;
 
         setSchedule({
           ...createEmptySchedule(),
-          ...(snapshot.data()?.mainJobSchedule ?? {}),
+          ...(snapshot.data() ?? {}),
         });
       } catch (error) {
         console.error("Error loading saved trainer time:", error);

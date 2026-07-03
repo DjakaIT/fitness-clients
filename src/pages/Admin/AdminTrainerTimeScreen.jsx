@@ -37,21 +37,12 @@ export default function AdminTrainerTimeScreen() {
     let isMounted = true;
 
     const loadSchedule = async () => {
-      if (!user?.uid) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const userRef = doc(db, "users", user.uid);
-        const snapshot = await getDoc(userRef);
-
+        const snapshot = await getDoc(doc(db, "config", "trainerSchedule"));
         if (!isMounted) return;
-
-        const savedSchedule = snapshot.data()?.mainJobSchedule ?? {};
         setSchedule({
           ...createEmptySchedule(),
-          ...savedSchedule,
+          ...(snapshot.data() ?? {}),
         });
       } catch (error) {
         console.error("Error loading main job schedule:", error);
@@ -91,11 +82,9 @@ export default function AdminTrainerTimeScreen() {
 
     setSaving(true);
     try {
-      await setDoc(
-        doc(db, "users", user.uid),
-        { mainJobSchedule: schedule },
-        { merge: true },
-      );
+      await setDoc(doc(db, "config", "trainerSchedule"), schedule, {
+        merge: true,
+      });
       Alert.alert("Spremljeno", "Vrijeme je uspješno spremljeno.");
     } catch (error) {
       console.error("Error saving main job schedule:", error);

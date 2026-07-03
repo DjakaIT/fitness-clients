@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#DBC1C9",
-    marginBottom: 32,
+    marginBottom: 24,
   },
 
   label: {
@@ -28,9 +28,72 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // Dates — vertical list so full names fit
+  // ── Closed / info cards ──
+  closedCard: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 18,
+    padding: 24,
+    alignItems: "center",
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  closedIcon: { fontSize: 36, marginBottom: 12 },
+  closedTitle: {
+    fontSize: 17,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  closedText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#DBC1C9",
+    textAlign: "center",
+  },
+  closedDate: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+    marginTop: 6,
+    textAlign: "center",
+  },
+
+  // ── Existing booking notice ──
+  existingCard: {
+    backgroundColor: "rgba(244, 151, 186, 0.12)",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(244, 151, 186, 0.3)",
+  },
+  existingLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  existingValue: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+  },
+  existingHint: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#DBC1C9",
+    marginTop: 4,
+  },
+
+  // ── Date chips ──
   dateList: { gap: 8, marginBottom: 32 },
   dateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 14,
@@ -43,8 +106,18 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.5)",
   },
+  myDateBadge: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+  },
+  fullBadge: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.3)",
+  },
 
-  // Times — wrap grid
+  // ── Time grid ──
   timeGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -65,11 +138,35 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.5)",
   },
+  chipMine: {
+    backgroundColor: "rgba(244, 151, 186, 0.15)",
+    borderColor: "rgba(244, 151, 186, 0.5)",
+  },
+  chipTaken: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+  chipTextTaken: { color: "rgba(255,255,255,0.2)" },
+  takenLabel: {
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.2)",
+    marginTop: 2,
+  },
+  mineLabel: {
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+    marginTop: 2,
+  },
 
-  // Active state shared by both
+  // ── Shared active state ──
   chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipTextActive: { color: "#FFFFFF" },
+  chipDisabled: { opacity: 0.4 },
+  chipTextDisabled: { color: "rgba(255,255,255,0.25)" },
 
+  // ── Submit ──
   submitBtn: {
     backgroundColor: "#7C3AED",
     borderRadius: 16,

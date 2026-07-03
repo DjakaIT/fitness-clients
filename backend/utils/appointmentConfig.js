@@ -87,7 +87,7 @@ export const WORK_DAYS = [
   { key: "monday", label: "Ponedjeljak", shortLabel: "Pon" },
   { key: "tuesday", label: "Utorak", shortLabel: "Uto" },
   { key: "wednesday", label: "Srijeda", shortLabel: "Sri" },
-  { key: "thursday", label: "Cetvrtak", shortLabel: "Cet" },
+  { key: "thursday", label: "Četvrtak", shortLabel: "Čet" },
   { key: "friday", label: "Petak", shortLabel: "Pet" },
 ];
 
@@ -140,7 +140,6 @@ export function getFreeClientTimes(workStart) {
 
     const fitsBeforeWork =
       appointmentEnd + TRAVEL_BUFFER_MINUTES <= shiftStartMinutes;
-
     const fitsAfterWork =
       shiftEndMinutes + TRAVEL_BUFFER_MINUTES <= appointmentStart;
 
@@ -159,15 +158,57 @@ export function getFreeClientTimeText(workStart) {
 
   for (let i = 1; i < freeTimes.length; i += 1) {
     const current = freeTimes[i];
-
     if (timeToMinutes(current) - timeToMinutes(previous) !== 30) {
       ranges.push(formatRange(rangeStart, previous));
       rangeStart = current;
     }
-
     previous = current;
   }
-
   ranges.push(formatRange(rangeStart, previous));
   return ranges.join(", ");
+}
+
+// ─── Day-of-week → schedule key mapping ───────────────────────────────────────
+const DOW_KEY_MAP = {
+  1: "monday",
+  2: "tuesday",
+  3: "wednesday",
+  4: "thursday",
+  5: "friday",
+};
+
+export function getTrainerWorkStartForDate(schedule, dateStr) {
+  if (!schedule) return null;
+  const key = DOW_KEY_MAP[parseLocal(dateStr).getDay()];
+  return key ? (schedule[key] ?? null) : null;
+}
+
+// ─── Booking window (Saturday only, for next Mon-Fri) ─────────────────────────
+export function getBookingWindow() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dow = today.getDay(); // 0=Sun, 1=Mon … 6=Sat
+
+  // Find this week's Monday (ISO week: Mon–Sun)
+  const daysToThisMonday = dow === 0 ? -6 : 1 - dow;
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() + daysToThisMonday);
+
+  // Bookable = Mon–Fri of NEXT week
+  const nextMonday = new Date(thisMonday);
+  nextMonday.setDate(thisMonday.getDate() + 7);
+
+  const bookableDates = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(nextMonday);
+    d.setDate(nextMonday.getDate() + i);
+    return toLocalDateString(d);
+  });
+
+  return {
+    isOpen: true,
+    bookableDates,
+    weekStart: bookableDates[0],
+    weekEnd: bookableDates[4],
+    nextSaturday: "", // no longer used
+  };
 }
