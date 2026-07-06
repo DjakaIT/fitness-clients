@@ -129,7 +129,8 @@ export function getShiftEndTime(workStart) {
 }
 
 export function getFreeClientTimes(workStart) {
-  if (!workStart) return CLIENT_APPOINTMENT_START_TIMES;
+  // ← JEDINA IZMJENA: null (Ne radim) → nema slobodnih termina
+  if (!workStart) return [];
 
   const shiftStartMinutes = timeToMinutes(workStart);
   const shiftEndMinutes = shiftStartMinutes + MAIN_JOB_DURATION_MINUTES;
@@ -168,7 +169,6 @@ export function getFreeClientTimeText(workStart) {
   return ranges.join(", ");
 }
 
-// ─── Day-of-week → schedule key mapping ───────────────────────────────────────
 const DOW_KEY_MAP = {
   1: "monday",
   2: "tuesday",
@@ -183,18 +183,15 @@ export function getTrainerWorkStartForDate(schedule, dateStr) {
   return key ? (schedule[key] ?? null) : null;
 }
 
-// ─── Booking window (Saturday only, for next Mon-Fri) ─────────────────────────
 export function getBookingWindow() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const dow = today.getDay(); // 0=Sun, 1=Mon … 6=Sat
+  const dow = today.getDay();
 
-  // Find this week's Monday (ISO week: Mon–Sun)
   const daysToThisMonday = dow === 0 ? -6 : 1 - dow;
   const thisMonday = new Date(today);
   thisMonday.setDate(today.getDate() + daysToThisMonday);
 
-  // Bookable = Mon–Fri of NEXT week
   const nextMonday = new Date(thisMonday);
   nextMonday.setDate(thisMonday.getDate() + 7);
 
@@ -209,6 +206,25 @@ export function getBookingWindow() {
     bookableDates,
     weekStart: bookableDates[0],
     weekEnd: bookableDates[4],
-    nextSaturday: "", // no longer used
+    nextSaturday: "",
   };
+}
+
+// ─── Week utilities (workout builder / my workouts) ──────────────────────────
+
+export function getWeekMondayFromOffset(offsetWeeks = 0) {
+  const today = new Date();
+  const dow = today.getDay();
+  const daysToMon = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + daysToMon + offsetWeeks * 7);
+  monday.setHours(0, 0, 0, 0);
+  return toLocalDateString(monday);
+}
+
+export function formatWeekLabel(mondayStr) {
+  const mon = parseLocal(mondayStr);
+  const fri = new Date(mon);
+  fri.setDate(mon.getDate() + 4);
+  return `${mon.getDate()}. ${MONTHS_HR[mon.getMonth()]} – ${fri.getDate()}. ${MONTHS_HR[fri.getMonth()]}`;
 }

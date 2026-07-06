@@ -2,6 +2,7 @@ import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
 import { canCancel } from "../../backend/utils/appointmentConfig";
+
 export default function useCancelAppointment() {
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -28,5 +29,23 @@ export default function useCancelAppointment() {
     }
   };
 
-  return { cancelAppointment, isCancelling };
+  const cancelMultiple = async (appointmentIds) => {
+    if (!appointmentIds.length) return { success: true };
+    setIsCancelling(true);
+    try {
+      await Promise.all(
+        appointmentIds.map((id) =>
+          updateDoc(doc(db, "appointments", id), { status: "cancelled" }),
+        ),
+      );
+      return { success: true };
+    } catch (error) {
+      console.error("Error cancelling multiple appointments:", error);
+      return { success: false };
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  return { cancelAppointment, cancelMultiple, isCancelling };
 }

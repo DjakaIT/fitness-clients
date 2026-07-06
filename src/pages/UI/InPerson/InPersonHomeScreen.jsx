@@ -19,6 +19,7 @@ import {
   canCancel,
 } from "../../../../backend/utils/appointmentConfig";
 import { styles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
+
 export default function InPersonHomeScreen() {
   const { user, logout } = useAuth();
   const navigation = useNavigation();

@@ -127,6 +127,14 @@ export default function HomeScreen() {
               >
                 Dojmovi
               </GeneralButton>
+              <GeneralButton
+                onPress={() => navigate.navigate("MyWorkouts")}
+                colors={["rgba(255,255,255,0.12)", "rgba(255,255,255,0.08)"]}
+                fullWidth
+                style={styles.actionButton}
+              >
+                Moji treninzi
+              </GeneralButton>
             </View>
           </ScrollView>
         </SafeAreaView>

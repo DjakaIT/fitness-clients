@@ -32,5 +32,35 @@ export default function useAddAppointment() {
     }
   };
 
-  return { addAppointment, isAdding };
+  const addMultipleAppointments = async (
+    userId,
+    userName,
+    userPhoto,
+    slots,
+  ) => {
+    setIsAdding(true);
+    try {
+      await Promise.all(
+        slots.map(({ date, time }) =>
+          addDoc(collection(db, "appointments"), {
+            userId,
+            userName,
+            userPhoto: userPhoto ?? null,
+            appointmentDate: date,
+            time,
+            status: "active",
+            createdAt: serverTimestamp(),
+          }),
+        ),
+      );
+      return { success: true };
+    } catch (error) {
+      console.error("Error adding multiple appointments:", error);
+      return { success: false };
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return { addAppointment, addMultipleAppointments, isAdding };
 }

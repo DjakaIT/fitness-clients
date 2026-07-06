@@ -95,12 +95,27 @@ export const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  workoutsBtn: {
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.13)",
+  },
+  workoutsBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#DBC1C9",
+  },
+
   addButton: {
     backgroundColor: "#7C3AED",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
-    marginTop: 16,
     marginBottom: 12,
   },
   addButtonText: {

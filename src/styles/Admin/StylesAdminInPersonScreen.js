@@ -17,6 +17,8 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   listContent: { paddingBottom: 24 },
+  list: { flex: 1 },
+
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -35,7 +37,7 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "PlusJakartaSans_700Bold",
   },
-  info: { marginLeft: 14 },
+  info: { marginLeft: 14, flex: 1 },
   name: {
     fontSize: 15,
     fontFamily: "PlusJakartaSans_600SemiBold",
@@ -47,16 +49,18 @@ export const styles = StyleSheet.create({
     color: "#9CA3AF",
     marginTop: 2,
   },
-  list: {
-    flex: 1,
+
+  chevron: {
+    fontSize: 20,
+    color: "#D1D5DB",
+    marginLeft: "auto",
   },
+
   actionsRow: {
     flexDirection: "row",
     gap: 10,
     marginTop: 12,
     marginBottom: 24,
   },
-  actionButton: {
-    flex: 1,
-  },
+  actionButton: { flex: 1 },
 });

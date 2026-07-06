@@ -60,36 +60,78 @@ export const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // ── Existing booking notice ──
-  existingCard: {
-    backgroundColor: "rgba(244, 151, 186, 0.12)",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 24,
+  // ── Slots preview ──
+  slotsBox: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: "rgba(244, 151, 186, 0.3)",
+    borderColor: "rgba(255,255,255,0.1)",
+    gap: 8,
   },
-  existingLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: "#F497BA",
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  existingValue: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
-  },
-  existingHint: {
-    fontSize: 13,
+  slotsEmpty: {
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.35)",
+    textAlign: "center",
+    paddingVertical: 8,
+  },
+  slotRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+  },
+  slotInfo: { flex: 1 },
+  slotDate: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
     color: "#DBC1C9",
-    marginTop: 4,
+  },
+  slotTime: {
+    fontSize: 20,
+    fontFamily: "Outfit_700Bold",
+    color: "#F497BA",
+    marginTop: 1,
+  },
+  slotRemoveBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(239,68,68,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  slotRemoveText: {
+    fontSize: 12,
+    color: "#FCA5A5",
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  // ── Counter ──
+  counterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+    paddingHorizontal: 2,
+  },
+  counterText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.35)",
+  },
+  counterHint: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#F497BA",
   },
 
   // ── Date chips ──
-  dateList: { gap: 8, marginBottom: 32 },
+  dateList: { gap: 8, marginBottom: 20 },
   dateChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -106,10 +148,15 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.5)",
   },
-  myDateBadge: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: "#F497BA",
+  chipAdded: {
+    backgroundColor: "rgba(52, 211, 153, 0.1)",
+    borderColor: "rgba(52, 211, 153, 0.35)",
+  },
+  chipTextAdded: { color: "#34D399" },
+  addedBadge: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#34D399",
   },
   fullBadge: {
     fontSize: 11,
@@ -122,7 +169,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    marginBottom: 36,
+    marginBottom: 16,
   },
   timeChip: {
     width: "22%",
@@ -138,33 +185,33 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.5)",
   },
-  chipMine: {
-    backgroundColor: "rgba(244, 151, 186, 0.15)",
-    borderColor: "rgba(244, 151, 186, 0.5)",
-  },
   chipTaken: {
     backgroundColor: "rgba(255,255,255,0.03)",
     borderColor: "rgba(255,255,255,0.06)",
   },
   chipTextTaken: { color: "rgba(255,255,255,0.2)" },
-  takenLabel: {
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.2)",
-    marginTop: 2,
-  },
-  mineLabel: {
-    fontSize: 9,
-    fontFamily: "Inter_600SemiBold",
-    color: "#F497BA",
-    marginTop: 2,
-  },
 
-  // ── Shared active state ──
+  // ── Shared active / disabled ──
   chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
   chipTextActive: { color: "#FFFFFF" },
-  chipDisabled: { opacity: 0.4 },
+  chipDisabled: { opacity: 0.35 },
   chipTextDisabled: { color: "rgba(255,255,255,0.25)" },
+
+  // ── Add slot button ──
+  addSlotBtn: {
+    backgroundColor: "rgba(124, 58, 237, 0.2)",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.4)",
+    marginBottom: 4,
+  },
+  addSlotBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#C4B5FD",
+  },
 
   // ── Submit ──
   submitBtn: {
