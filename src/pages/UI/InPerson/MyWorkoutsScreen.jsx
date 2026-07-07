@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
+  Animated,
   View,
   Text,
   ScrollView,
@@ -16,6 +17,7 @@ import {
   formatWeekLabel,
 } from "../../../../backend/utils/appointmentConfig";
 import { styles } from "../../../styles/UI/InPerson/StylesMyWorkoutsScreen";
+import { VIDEOS } from "../../../../backend/data/videos";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -129,22 +131,22 @@ export default function MyWorkoutsScreen() {
                 </View>
               ) : (
                 <View style={styles.exerciseList}>
-                  {currentWorkout.exercises.map((ex, idx) => (
-                    <View key={idx} style={styles.exerciseCard}>
-                      <View style={styles.exerciseNum}>
-                        <Text style={styles.exerciseNumText}>{idx + 1}</Text>
-                      </View>
-                      <View style={styles.exerciseInfo}>
-                        <Text style={styles.exerciseName}>
-                          {toTitleCase(ex.name)}
-                        </Text>
-                        <Text style={styles.exerciseMeta}>
-                          {ex.sets} serije × {ex.reps} ponavljanja
-                          {ex.note ? `\n${ex.note}` : ""}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
+                  {currentWorkout.exercises.map((ex, idx) => {
+                    const video = VIDEOS.find((v) => v.id === ex.exerciseId);
+
+                    return (
+                      <ExerciseCard
+                        key={idx}
+                        ex={ex}
+                        idx={idx}
+                        video={video}
+                        onNavigate={() =>
+                          video &&
+                          navigation.navigate("WorkoutVideo", { video })
+                        }
+                      />
+                    );
+                  })}
                 </View>
               )}
             </>
@@ -152,5 +154,53 @@ export default function MyWorkoutsScreen() {
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
+  );
+}
+
+function ExerciseCard({ ex, idx, video, onNavigate }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 60,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={() => video && onNavigate()}
+    >
+      <Animated.View style={[styles.exerciseCard, { transform: [{ scale }] }]}>
+        <View style={styles.exerciseNum}>
+          <Text style={styles.exerciseNumText}>{idx + 1}</Text>
+        </View>
+        <View style={styles.exerciseInfo}>
+          <Text style={styles.exerciseName}>{toTitleCase(ex.name)}</Text>
+          <Text style={styles.exerciseMeta}>
+            {ex.sets} serije × {ex.reps} ponavljanja
+            {ex.note ? `\n${ex.note}` : ""}
+          </Text>
+        </View>
+        {video && (
+          <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 18 }}>
+            ›
+          </Text>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }
