@@ -1,77 +1,89 @@
-import React from "react";
-import { View, Text, Image, Dimensions } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, Text, Image, Pressable, Animated, Easing } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import GeneralButton from "../components/GeneralButton";
-import { useFonts } from "expo-font";
 import { useNavigation } from "@react-navigation/native";
+import AuthBackdrop from "../components/AuthBackdrop";
+import FadeInView from "../components/FadeInView";
 import { styles } from "../styles/StylesWelcomeScreen";
-
-const colors = {
-  bgDeep: "#4b0622",
-  bgSoft: "#654b55",
-
-  // Typography
-  textPrimary: "#FFFFFF",
-  textSecondary: "#DBC1C9",
-
-  // Button
-  btnStart: "#F497BA",
-  btnEnd: "#F2829E",
-};
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
-  const [loaded] = useFonts({
-    LatoRegular: require("../../assets/fonts/Lato-Regular.ttf"),
-    LatoBold: require("../../assets/fonts/Lato-Bold.ttf"),
-  });
 
-  if (!loaded) return null;
+  const enter = useRef(new Animated.Value(0)).current;
+  const float = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, {
+          toValue: 1,
+          duration: 2800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(float, {
+          toValue: 0,
+          duration: 2800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [enter, float]);
+
+  const enterScale = enter.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
+  const enterY = enter.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
+  const floatY = float.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar style="light" />
-
-      <LinearGradient
-        colors={[colors.bgSoft, colors.bgDeep]}
-        style={styles.background}
-      >
+    <View style={styles.root}>
+      <StatusBar style="dark" />
+      <AuthBackdrop>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.content}>
-            <View style={styles.logoFrame}>
-              <Image
-                source={require("../../assets/images/logo.jpeg")}
-                style={styles.logo}
-                resizeMode="cover"
-              />
-            </View>
-
-            <View style={styles.textGroup}>
-              <Text style={styles.title}>MARTA</Text>
-              <Text style={styles.titleHighlight}>FITNESS</Text>
-
-              <View style={styles.accentLine} />
-
-              <Text style={styles.subtitle}>Tvoj vodič do promjene.</Text>
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            <GeneralButton
-              onPress={() => navigation.navigate("Login")}
-              colors={[colors.btnStart, colors.btnEnd]}
-              size="lg"
-              fullWidth
-              style={styles.noFrameButton}
-              textStyle={styles.buttonText}
+            <Animated.View
+              style={{
+                opacity: enter,
+                transform: [{ translateY: enterY }, { scale: enterScale }],
+              }}
             >
-              ZAPOČNI
-            </GeneralButton>
+              <Animated.View
+                style={[styles.logoCard, { transform: [{ translateY: floatY }] }]}
+              >
+                <Image
+                  source={require("../../assets/images/logo.jpeg")}
+                  style={styles.logo}
+                  resizeMode="cover"
+                />
+              </Animated.View>
+            </Animated.View>
+
+            <FadeInView delay={350}>
+              <View style={styles.divider} />
+            </FadeInView>
+            <FadeInView delay={450}>
+              <Text style={styles.tagline}>Tvoj vodič do promjene</Text>
+            </FadeInView>
           </View>
+
+          <FadeInView delay={620} style={styles.footer}>
+            <Pressable
+              style={styles.button}
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={styles.buttonText}>ZAPOČNI</Text>
+            </Pressable>
+          </FadeInView>
         </SafeAreaView>
-      </LinearGradient>
+      </AuthBackdrop>
     </View>
   );
 }

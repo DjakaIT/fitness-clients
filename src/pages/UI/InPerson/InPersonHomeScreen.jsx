@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -16,10 +16,8 @@ import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useAppointments from "../../../hooks/useAppointments";
 import useCancelAppointment from "../../../hooks/useCancelAppointment";
 import ProfilePageComponent from "../../../components/ProfilePageComponent";
-import {
-  formatDateLong,
-  canCancel,
-} from "../../../../backend/utils/appointmentConfig";
+import CancelAppointmentSheet from "../../../components/CancelAppointmentSheet";
+import { formatDateLong } from "../../../../backend/utils/appointmentConfig";
 import { makeStyles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
 
 export default function InPersonHomeScreen() {
@@ -30,56 +28,37 @@ export default function InPersonHomeScreen() {
   const { appointments, loading } = useAppointments(user?.uid);
   const { cancelAppointment, isCancelling } = useCancelAppointment();
 
+  const [cancelTarget, setCancelTarget] = useState(null);
+
   const firstName = user?.displayName?.split(" ")[0] ?? "";
 
-  const handleCancel = (item) => {
-    Alert.alert(
-      "Otkaži termin",
-      `${formatDateLong(item.appointmentDate)} u ${item.time}`,
-      [
-        { text: "Odustani", style: "cancel" },
-        {
-          text: "Otkaži termin",
-          style: "destructive",
-          onPress: async () => {
-            const result = await cancelAppointment(
-              item.id,
-              item.appointmentDate,
-              item.time,
-            );
-            if (!result.success) {
-              Alert.alert("Greška", "Otkazivanje nije uspjelo. Pokušaj ponovo.");
-            }
-          },
-        },
-      ],
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget) return;
+    const result = await cancelAppointment(
+      cancelTarget.id,
+      cancelTarget.appointmentDate,
+      cancelTarget.time,
     );
+    if (result.success) {
+      setCancelTarget(null);
+    } else if (!result.tooLate) {
+      Alert.alert("Greška", "Otkazivanje nije uspjelo. Pokušaj ponovo.");
+    }
   };
 
-  const renderAppointment = ({ item }) => {
-    const cancellable = canCancel(item.appointmentDate, item.time);
-    return (
-      <View style={styles.appointmentCard}>
-        <View style={styles.appointmentLeft}>
-          <Text style={styles.appointmentDate}>
-            {formatDateLong(item.appointmentDate)}
-          </Text>
-          <Text style={styles.appointmentTime}>{item.time}</Text>
-        </View>
-        {cancellable ? (
-          <Pressable
-            style={styles.cancelBtn}
-            onPress={() => handleCancel(item)}
-            disabled={isCancelling}
-          >
-            <Text style={styles.cancelBtnText}>Otkaži</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.cannotCancelText}>Nije moguće{"\n"}otkazati</Text>
-        )}
+  const renderAppointment = ({ item }) => (
+    <View style={styles.appointmentCard}>
+      <View style={styles.appointmentLeft}>
+        <Text style={styles.appointmentDate}>
+          {formatDateLong(item.appointmentDate)}
+        </Text>
+        <Text style={styles.appointmentTime}>{item.time}</Text>
       </View>
-    );
-  };
+      <Pressable style={styles.cancelBtn} onPress={() => setCancelTarget(item)}>
+        <Text style={styles.cancelBtnText}>Otkaži</Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <View style={styles.screen}>
@@ -131,6 +110,14 @@ export default function InPersonHomeScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <CancelAppointmentSheet
+        visible={cancelTarget !== null}
+        appointment={cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleConfirmCancel}
+        isCancelling={isCancelling}
+      />
     </View>
   );
 }

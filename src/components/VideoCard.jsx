@@ -1,16 +1,13 @@
 import React from "react";
 import { View, Text, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "../styles/Components/StylesVideoCard";
-
-const colors = {
-  cardBg: "#FFFFFF",
-  title: "#3B0F2E",
-  shadow: "#E9D8F5",
-  button: "#E9A6B2",
-};
+import { makeStyles } from "../styles/Components/StylesVideoCard";
+import { useTheme, useThemedStyles } from "../context/ThemeContext";
 
 export default function VideoCard({ title, image, onPress, imageScale }) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.card}>
@@ -35,7 +32,7 @@ export default function VideoCard({ title, image, onPress, imageScale }) {
               pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
             ]}
           >
-            <Ionicons name="play" size={18} color="#fff" />
+            <Ionicons name="play" size={18} color={theme.onAccent} />
             <Text style={styles.buttonText}>Pogledaj</Text>
           </Pressable>
         </View>

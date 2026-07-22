@@ -8,7 +8,7 @@ import ProfilePageComponent from "../../components/ProfilePageComponent";
 import {
   WORK_DAYS,
   getFreeClientTimeText,
-  getShiftEndTime,
+  normalizeDayBlocks,
   getBookingWindow,
   formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
@@ -16,7 +16,7 @@ import { styles } from "../../styles/Admin/StylesAdminTrainerSavedTimeScreen";
 
 const createEmptySchedule = () =>
   WORK_DAYS.reduce((acc, day) => {
-    acc[day.key] = null;
+    acc[day.key] = [];
     return acc;
   }, {});
 
@@ -45,7 +45,7 @@ export default function AdminTrainerSavedTimeScreen() {
         const data = snapshot.data() ?? {};
         const days = createEmptySchedule();
         WORK_DAYS.forEach((day) => {
-          days[day.key] = data[day.key] ?? null;
+          days[day.key] = normalizeDayBlocks(data[day.key]);
         });
         setSchedule(days);
         setSavedWeekStart(data.weekStart ?? null);
@@ -68,7 +68,9 @@ export default function AdminTrainerSavedTimeScreen() {
     };
   }, [user?.uid]);
 
-  const hasSavedSchedule = WORK_DAYS.some((day) => Boolean(schedule[day.key]));
+  const hasSavedSchedule =
+    savedWeekStart !== null ||
+    WORK_DAYS.some((day) => schedule[day.key].length > 0);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -114,24 +116,25 @@ export default function AdminTrainerSavedTimeScreen() {
             </View>
 
             {WORK_DAYS.map((day) => {
-              const workStart = schedule[day.key];
-              const shiftEnd = getShiftEndTime(workStart);
+              const blocks = schedule[day.key];
 
               return (
                 <View key={day.key} style={styles.dayCard}>
                   <Text style={styles.dayTitle}>{day.label}</Text>
 
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Radno vrijeme</Text>
+                    <Text style={styles.infoLabel}>Zauzeta</Text>
                     <Text style={styles.infoValue}>
-                      {workStart ? `${workStart} - ${shiftEnd}` : "Ne radite"}
+                      {blocks.length > 0
+                        ? blocks.map((b) => `${b.start}–${b.end}`).join(", ")
+                        : "Slobodna cijeli dan"}
                     </Text>
                   </View>
 
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Slobodno za klijentice</Text>
                     <Text style={styles.infoValue}>
-                      {getFreeClientTimeText(workStart)}
+                      {getFreeClientTimeText(blocks)}
                     </Text>
                   </View>
                 </View>

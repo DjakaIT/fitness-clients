@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -16,17 +17,22 @@ import GeneralButton from "../../components/GeneralButton";
 import ConfirmSheet from "../../components/ConfirmSheet";
 import {
   WORK_DAYS,
-  MAIN_JOB_START_TIMES,
+  BLOCK_TIMES,
+  normalizeDayBlocks,
   getFreeClientTimeText,
-  getShiftEndTime,
   getBookingWindow,
   formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminTrainerTimeScreen";
 
+const timeToMin = (t) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
+
 const createEmptySchedule = () =>
   WORK_DAYS.reduce((acc, day) => {
-    acc[day.key] = null;
+    acc[day.key] = [];
     return acc;
   }, {});
 
@@ -38,8 +44,11 @@ export default function AdminTrainerTimeScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [saveState, setSaveState] = useState("idle"); // idle | saving | success | error
 
-  // The week clients are currently booking — the saved schedule is valid for
-  // exactly this interval.
+  // Add-block modal state
+  const [addDay, setAddDay] = useState(null); // dayKey or null
+  const [newStart, setNewStart] = useState(null);
+  const [newEnd, setNewEnd] = useState(null);
+
   const { weekStart: targetWeekStart } = useMemo(() => getBookingWindow(), []);
 
   useEffect(() => {
@@ -52,46 +61,51 @@ export default function AdminTrainerTimeScreen() {
         const data = snapshot.data() ?? {};
         const days = createEmptySchedule();
         WORK_DAYS.forEach((day) => {
-          days[day.key] = data[day.key] ?? null;
+          days[day.key] = normalizeDayBlocks(data[day.key]);
         });
         setSchedule(days);
         setSavedWeekStart(data.weekStart ?? null);
       } catch (error) {
-        console.error("Error loading main job schedule:", error);
-        if (isMounted) {
-          Alert.alert("Greška", "Raspored nije učitan.");
-        }
+        console.error("Error loading schedule:", error);
+        if (isMounted) Alert.alert("Greška", "Raspored nije učitan.");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
     loadSchedule();
-
     return () => {
       isMounted = false;
     };
   }, [user?.uid]);
 
-  const handleSelectTime = (dayKey, time) => {
+  const openAdd = (dayKey) => {
+    setAddDay(dayKey);
+    setNewStart(null);
+    setNewEnd(null);
+  };
+  const closeAdd = () => setAddDay(null);
+
+  const confirmAdd = () => {
+    if (!addDay || !newStart || !newEnd) return;
     setSchedule((prev) => ({
       ...prev,
-      [dayKey]: time,
+      [addDay]: [...prev[addDay], { start: newStart, end: newEnd }].sort(
+        (a, b) => timeToMin(a.start) - timeToMin(b.start),
+      ),
     }));
+    closeAdd();
   };
 
-  const handleClearDay = (dayKey) => {
+  const removeBlock = (dayKey, index) => {
     setSchedule((prev) => ({
       ...prev,
-      [dayKey]: null,
+      [dayKey]: prev[dayKey].filter((_, i) => i !== index),
     }));
   };
 
   const handleSave = async () => {
     if (!user?.uid) return;
-
     setSaveState("saving");
     try {
       await setDoc(doc(db, "config", "trainerSchedule"), {
@@ -102,7 +116,7 @@ export default function AdminTrainerTimeScreen() {
       setSavedWeekStart(targetWeekStart);
       setSaveState("success");
     } catch (error) {
-      console.error("Error saving main job schedule:", error);
+      console.error("Error saving schedule:", error);
       setSaveState("error");
     }
   };
@@ -112,7 +126,12 @@ export default function AdminTrainerTimeScreen() {
     setSaveState("idle");
   };
 
-  const workingDaysCount = WORK_DAYS.filter((day) => schedule[day.key]).length;
+  const busyDaysCount = WORK_DAYS.filter(
+    (day) => schedule[day.key].length > 0,
+  ).length;
+
+  const validNewBlock =
+    newStart && newEnd && timeToMin(newEnd) > timeToMin(newStart);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -120,7 +139,8 @@ export default function AdminTrainerTimeScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Dodaj vrijeme</Text>
         <Text style={styles.subtitle}>
-          Odaberi početak svoje 4-satne smjene za svaki radni dan.
+          Označi kad si zauzeta (glavni posao, obveze). Klijentice vide
+          preostalo slobodno vrijeme.
         </Text>
 
         <View style={styles.weekBanner}>
@@ -152,99 +172,56 @@ export default function AdminTrainerTimeScreen() {
             showsVerticalScrollIndicator={false}
           >
             {WORK_DAYS.map((day) => {
-              const workStart = schedule[day.key];
-              const shiftEnd = getShiftEndTime(workStart);
-              const workTimeText = workStart
-                ? `${workStart} - ${shiftEnd}`
-                : "Ne radite";
-              const freeTimeText = getFreeClientTimeText(workStart);
-
+              const blocks = schedule[day.key];
               return (
                 <View key={day.key} style={styles.dayCard}>
                   <Text style={styles.dayTitle}>{day.label}</Text>
 
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.timeSlider}
-                  >
-                    <Pressable
-                      onPress={() => handleClearDay(day.key)}
-                      style={[
-                        styles.chip,
-                        styles.offChip,
-                        !workStart && styles.offChipActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          styles.offChipText,
-                          !workStart && styles.offChipTextActive,
-                        ]}
-                      >
-                        Ne radim
-                      </Text>
-                    </Pressable>
-
-                    {MAIN_JOB_START_TIMES.map((time) => {
-                      const selected = workStart === time;
-
-                      return (
-                        <Pressable
-                          key={time}
-                          onPress={() => handleSelectTime(day.key, time)}
-                          style={[styles.chip, selected && styles.chipActive]}
-                        >
-                          <Text
-                            style={[
-                              styles.chipText,
-                              selected && styles.chipTextActive,
-                            ]}
-                          >
-                            {time}
+                  {blocks.length > 0 ? (
+                    <View style={styles.blocksWrap}>
+                      {blocks.map((b, i) => (
+                        <View key={`${b.start}-${b.end}-${i}`} style={styles.blockPill}>
+                          <Text style={styles.blockPillText}>
+                            {b.start} – {b.end}
                           </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-
-                  <View style={styles.summaryRow}>
-                    <View style={styles.summaryBox}>
-                      <Text style={styles.summaryLabel}>Radno vrijeme</Text>
-                      <Text style={styles.summaryValue}>{workTimeText}</Text>
+                          <Pressable
+                            style={styles.blockRemoveBtn}
+                            onPress={() => removeBlock(day.key, i)}
+                            hitSlop={6}
+                          >
+                            <Text style={styles.blockRemoveText}>✕</Text>
+                          </Pressable>
+                        </View>
+                      ))}
                     </View>
+                  ) : (
+                    <Text style={styles.noBlocks}>
+                      Nema zauzeća — slobodna cijeli dan.
+                    </Text>
+                  )}
 
-                    <View style={styles.summaryBox}>
-                      <Text style={styles.summaryLabel}>Termini za klijentice</Text>
-                      <Text style={styles.summaryValue}>{freeTimeText}</Text>
-                    </View>
+                  <Pressable
+                    style={styles.addBlockBtn}
+                    onPress={() => openAdd(day.key)}
+                  >
+                    <Text style={styles.addBlockBtnText}>+ Dodaj zauzeće</Text>
+                  </Pressable>
+
+                  <View style={styles.freeRow}>
+                    <Text style={styles.freeLabel}>SLOBODNO ZA KLIJENTICE</Text>
+                    <Text style={styles.freeValue}>
+                      {getFreeClientTimeText(blocks)}
+                    </Text>
                   </View>
                 </View>
               );
             })}
 
-            <View style={styles.weeklySummaryCard}>
-              <Text style={styles.weeklySummaryTitle}>
-                Sati u kojima ste slobodni za klijentice:
-              </Text>
-
-              {WORK_DAYS.map((day) => (
-                <View key={day.key} style={styles.weeklySummaryRow}>
-                  <Text style={styles.weeklySummaryDay}>
-                    {day.shortLabel.toUpperCase()}:
-                  </Text>
-                  <Text style={styles.weeklySummaryText}>
-                    {getFreeClientTimeText(schedule[day.key])}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
             <GeneralButton
               onPress={() => setShowConfirm(true)}
               fullWidth
               colors={["#7C3AED", "#7C3AED"]}
+              style={{ marginTop: 8, marginBottom: 24 }}
             >
               Spremi vrijeme
             </GeneralButton>
@@ -252,37 +229,143 @@ export default function AdminTrainerTimeScreen() {
         )}
       </View>
 
+      {/* Add-block bottom sheet */}
+      <Modal
+        visible={addDay !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={closeAdd}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Dodaj zauzeće</Text>
+            <Text style={styles.modalSubtitle}>
+              {WORK_DAYS.find((d) => d.key === addDay)?.label}
+            </Text>
+
+            <Text style={styles.pickerLabel}>POČETAK</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pickerScroll}
+            >
+              {BLOCK_TIMES.slice(0, -1).map((t) => {
+                const selected = newStart === t;
+                return (
+                  <Pressable
+                    key={t}
+                    style={[styles.pickerChip, selected && styles.pickerChipActive]}
+                    onPress={() => {
+                      setNewStart(t);
+                      if (newEnd && timeToMin(newEnd) <= timeToMin(t)) {
+                        setNewEnd(null);
+                      }
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerChipText,
+                        selected && styles.pickerChipTextActive,
+                      ]}
+                    >
+                      {t}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <Text style={styles.pickerLabel}>KRAJ</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pickerScroll}
+            >
+              {BLOCK_TIMES.map((t) => {
+                const disabled = !newStart || timeToMin(t) <= timeToMin(newStart);
+                const selected = newEnd === t;
+                return (
+                  <Pressable
+                    key={t}
+                    disabled={disabled}
+                    style={[
+                      styles.pickerChip,
+                      selected && styles.pickerChipActive,
+                      disabled && styles.pickerChipDisabled,
+                    ]}
+                    onPress={() => setNewEnd(t)}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerChipText,
+                        selected && styles.pickerChipTextActive,
+                      ]}
+                    >
+                      {t}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {!newStart && (
+              <Text style={styles.modalError}>Odaberi početak zauzeća.</Text>
+            )}
+
+            <View style={styles.modalBtns}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={closeAdd}
+              >
+                <Text style={styles.modalBtnCancelText}>Odustani</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalBtn,
+                  styles.modalBtnConfirm,
+                  !validNewBlock && styles.modalBtnDisabled,
+                ]}
+                disabled={!validNewBlock}
+                onPress={confirmAdd}
+              >
+                <Text style={styles.modalBtnConfirmText}>Dodaj</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ConfirmSheet
         visible={showConfirm}
         status={saveState}
         onConfirm={handleSave}
         onClose={closeSheet}
         title="Spremi raspored?"
-        subtitle={`Vrijedi za tjedan ${formatWeekLabel(targetWeekStart)}. Odabrala si ${workingDaysCount} od 5 radnih dana.`}
+        subtitle={`Vrijedi za tjedan ${formatWeekLabel(targetWeekStart)}. Zauzeta si ${busyDaysCount} od 5 radnih dana.`}
         confirmLabel="Spremi"
         successTitle="Spremljeno ✓"
         successSubtitle="Raspored je ažuriran."
         errorTitle="Nije spremljeno"
         errorSubtitle="Provjeri internet vezu i pokušaj ponovo."
       >
-        {WORK_DAYS.map((day) => {
-          const workStart = schedule[day.key];
-          return (
-            <View key={day.key} style={styles.recapRow}>
-              <Text style={styles.recapDay}>{day.shortLabel.toUpperCase()}</Text>
-              <Text
-                style={[
-                  styles.recapValue,
-                  !workStart && styles.recapValueOff,
-                ]}
-              >
-                {workStart
-                  ? `${workStart}–${getShiftEndTime(workStart)}`
-                  : "Ne radim"}
-              </Text>
-            </View>
-          );
-        })}
+        {WORK_DAYS.map((day) => (
+          <View key={day.key} style={styles.recapRow}>
+            <Text style={styles.recapDay}>{day.shortLabel.toUpperCase()}</Text>
+            <Text
+              style={[
+                styles.recapValue,
+                schedule[day.key].length === 0 && styles.recapValueOff,
+              ]}
+            >
+              {schedule[day.key].length === 0
+                ? "Slobodna"
+                : schedule[day.key]
+                    .map((b) => `${b.start}–${b.end}`)
+                    .join(", ")}
+            </Text>
+          </View>
+        ))}
       </ConfirmSheet>
     </SafeAreaView>
   );

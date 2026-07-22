@@ -83,6 +83,14 @@ export function canCancel(appointmentDate, time) {
   return Date.now() < cutoff.getTime();
 }
 
+// Hours from now until the appointment (negative if it already started).
+export function hoursUntilAppointment(appointmentDate, time) {
+  const [y, m, d] = appointmentDate.split("-").map(Number);
+  const [h, min] = time.split(":").map(Number);
+  const slot = new Date(y, m - 1, d, h, min, 0);
+  return (slot.getTime() - Date.now()) / (1000 * 60 * 60);
+}
+
 export const WORK_DAYS = [
   { key: "monday", label: "Ponedjeljak", shortLabel: "Pon" },
   { key: "tuesday", label: "Utorak", shortLabel: "Uto" },
@@ -110,10 +118,6 @@ function minutesToTime(totalMinutes) {
   return `${hours}:${minutes}`;
 }
 
-function formatRange(start, end) {
-  return start === end ? start : `${start} - ${end}`;
-}
-
 export const CLIENT_APPOINTMENT_START_TIMES = TIMES.filter((time) => {
   const startMinutes = timeToMinutes(time);
   const endMinutes = startMinutes + CLIENT_SESSION_DURATION_MINUTES;
@@ -128,45 +132,67 @@ export function getShiftEndTime(workStart) {
   return minutesToTime(timeToMinutes(workStart) + MAIN_JOB_DURATION_MINUTES);
 }
 
-export function getFreeClientTimes(workStart) {
-  // Nema smjene na glavnom poslu → trenerica je slobodna cijeli dan za klijentice.
-  if (!workStart) return [...CLIENT_APPOINTMENT_START_TIMES];
+// Times available when defining a busy block (06:00–22:00, 30-min grid).
+export const BLOCK_TIMES = Array.from({ length: (22 - 6) * 2 + 1 }, (_, i) =>
+  minutesToTime(timeToMinutes("06:00") + i * 30),
+);
 
-  const shiftStartMinutes = timeToMinutes(workStart);
-  const shiftEndMinutes = shiftStartMinutes + MAIN_JOB_DURATION_MINUTES;
+// A day's schedule value may be: null/undefined (fully free), a legacy single
+// main-job start string (→ one 4h block), or an array of { start, end } blocks.
+export function normalizeDayBlocks(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .filter((b) => b && b.start && b.end)
+      .map((b) => ({ start: b.start, end: b.end }))
+      .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+  }
+  if (typeof value === "string") {
+    return [{ start: value, end: getShiftEndTime(value) }];
+  }
+  return [];
+}
+
+// Free 60-min client slots are those that don't overlap any busy block, within
+// the client day. Free time runs right up to each block (no travel buffer).
+export function getFreeClientTimes(value) {
+  const busy = normalizeDayBlocks(value).map((b) => [
+    timeToMinutes(b.start),
+    timeToMinutes(b.end),
+  ]);
 
   return CLIENT_APPOINTMENT_START_TIMES.filter((time) => {
-    const appointmentStart = timeToMinutes(time);
-    const appointmentEnd = appointmentStart + CLIENT_SESSION_DURATION_MINUTES;
-
-    const fitsBeforeWork =
-      appointmentEnd + TRAVEL_BUFFER_MINUTES <= shiftStartMinutes;
-    const fitsAfterWork =
-      shiftEndMinutes + TRAVEL_BUFFER_MINUTES <= appointmentStart;
-
-    return fitsBeforeWork || fitsAfterWork;
+    const start = timeToMinutes(time);
+    const end = start + CLIENT_SESSION_DURATION_MINUTES;
+    return busy.every(([b0, b1]) => end <= b0 || start >= b1);
   });
 }
 
-export function getFreeClientTimeText(workStart) {
-  const freeTimes = getFreeClientTimes(workStart);
+// Free time as human-readable windows, e.g. "08:00 - 12:00, 16:00 - 18:00".
+export function getFreeClientTimeText(value) {
+  const free = getFreeClientTimes(value);
+  if (free.length === 0) return "Nema slobodnih termina.";
 
-  if (freeTimes.length === 0) return "Nema slobodnih termina.";
+  const windows = [];
+  let windowStart = free[0];
+  let previous = free[0];
 
-  const ranges = [];
-  let rangeStart = freeTimes[0];
-  let previous = freeTimes[0];
+  const closeWindow = () =>
+    windows.push(
+      `${windowStart} - ${minutesToTime(
+        timeToMinutes(previous) + CLIENT_SESSION_DURATION_MINUTES,
+      )}`,
+    );
 
-  for (let i = 1; i < freeTimes.length; i += 1) {
-    const current = freeTimes[i];
-    if (timeToMinutes(current) - timeToMinutes(previous) !== 30) {
-      ranges.push(formatRange(rangeStart, previous));
-      rangeStart = current;
+  for (let i = 1; i < free.length; i += 1) {
+    if (timeToMinutes(free[i]) - timeToMinutes(previous) !== 30) {
+      closeWindow();
+      windowStart = free[i];
     }
-    previous = current;
+    previous = free[i];
   }
-  ranges.push(formatRange(rangeStart, previous));
-  return ranges.join(", ");
+  closeWindow();
+  return windows.join(", ");
 }
 
 const DOW_KEY_MAP = {
