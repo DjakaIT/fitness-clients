@@ -7,24 +7,35 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
+import { CaretLeft, CaretRight, Barbell } from "phosphor-react-native";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useClientWorkouts from "../../../hooks/useClientWorkouts";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
 } from "../../../../backend/utils/appointmentConfig";
-import { styles } from "../../../styles/UI/InPerson/StylesMyWorkoutsScreen";
+import { makeStyles } from "../../../styles/UI/InPerson/StylesMyWorkoutsScreen";
 import { VIDEOS } from "../../../../backend/data/videos";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
+const pluralVjezba = (n) => {
+  if (n % 10 === 1 && n % 100 !== 11) return "vježba";
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14))
+    return "vježbe";
+  return "vježbi";
+};
+
 export default function MyWorkoutsScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -40,16 +51,18 @@ export default function MyWorkoutsScreen() {
   const currentWorkout = workouts.find(
     (w) => w.trainingNumber === activeTraining + 1,
   );
+  const exerciseCount = currentWorkout?.exercises?.length ?? 0;
 
   return (
-    <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
+    <View style={styles.screen}>
+      <StatusBar style={theme.statusBar} />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← Natrag</Text>
+            <CaretLeft size={20} color={theme.textPrimary} />
           </Pressable>
 
           <Text style={styles.title}>Moji treninzi</Text>
@@ -63,9 +76,14 @@ export default function MyWorkoutsScreen() {
                 setActiveTraining(0);
               }}
             >
-              <Text style={styles.weekArrowText}>‹</Text>
+              <CaretLeft size={18} color={theme.accent} />
             </Pressable>
-            <Text style={styles.weekLabel}>{formatWeekLabel(weekStart)}</Text>
+            <View style={styles.weekCenter}>
+              <Text style={styles.weekLabel}>{formatWeekLabel(weekStart)}</Text>
+              {weekOffset === 0 && (
+                <Text style={styles.weekBadge}>OVAJ TJEDAN</Text>
+              )}
+            </View>
             <Pressable
               style={styles.weekArrow}
               onPress={() => {
@@ -73,22 +91,25 @@ export default function MyWorkoutsScreen() {
                 setActiveTraining(0);
               }}
             >
-              <Text style={styles.weekArrowText}>›</Text>
+              <CaretRight size={18} color={theme.accent} />
             </Pressable>
           </View>
 
           {loading ? (
             <ActivityIndicator
-              color="#F497BA"
+              color={theme.accent}
               size="large"
               style={{ marginTop: 40 }}
             />
           ) : workouts.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyIcon}>🏋️</Text>
-              <Text style={styles.emptyTitle}>
-                Nema programa za ovaj tjedan
-              </Text>
+              <Barbell
+                size={40}
+                weight="duotone"
+                color={theme.accent}
+                style={styles.emptyIcon}
+              />
+              <Text style={styles.emptyTitle}>Nema programa za ovaj tjedan</Text>
               <Text style={styles.emptyText}>
                 Trenerica još nije poslala program.{"\n"}Provjeri opet uskoro.
               </Text>
@@ -104,10 +125,7 @@ export default function MyWorkoutsScreen() {
                 {Array.from({ length: sessionsPerWeek }, (_, i) => (
                   <Pressable
                     key={i}
-                    style={[
-                      styles.tab,
-                      activeTraining === i && styles.tabActive,
-                    ]}
+                    style={[styles.tab, activeTraining === i && styles.tabActive]}
                     onPress={() => setActiveTraining(i)}
                   >
                     <Text
@@ -121,6 +139,12 @@ export default function MyWorkoutsScreen() {
                   </Pressable>
                 ))}
               </ScrollView>
+
+              {exerciseCount > 0 && (
+                <Text style={styles.countCaption}>
+                  {exerciseCount} {pluralVjezba(exerciseCount)}
+                </Text>
+              )}
 
               {/* Exercise list */}
               {!currentWorkout || currentWorkout.exercises.length === 0 ? (
@@ -141,8 +165,7 @@ export default function MyWorkoutsScreen() {
                         idx={idx}
                         video={video}
                         onNavigate={() =>
-                          video &&
-                          navigation.navigate("WorkoutVideo", { video })
+                          video && navigation.navigate("WorkoutVideo", { video })
                         }
                       />
                     );
@@ -153,11 +176,13 @@ export default function MyWorkoutsScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 function ExerciseCard({ ex, idx, video, onNavigate }) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -192,14 +217,10 @@ function ExerciseCard({ ex, idx, video, onNavigate }) {
           <Text style={styles.exerciseName}>{toTitleCase(ex.name)}</Text>
           <Text style={styles.exerciseMeta}>
             {ex.sets} serije × {ex.reps} ponavljanja
-            {ex.note ? `\n${ex.note}` : ""}
           </Text>
+          {ex.note ? <Text style={styles.exerciseNote}>{ex.note}</Text> : null}
         </View>
-        {video && (
-          <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 18 }}>
-            ›
-          </Text>
-        )}
+        {video && <CaretRight size={18} color={theme.textTertiary} />}
       </Animated.View>
     </Pressable>
   );

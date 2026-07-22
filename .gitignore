@@ -53,3 +53,5 @@ app.json
 # Secrets & credentials
 .env
 .env.*
+# Firebase security rules — managed in the Firebase console, never deployed from repo
+firestore.rules

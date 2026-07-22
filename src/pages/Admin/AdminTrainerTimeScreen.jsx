@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   ActivityIndicator,
@@ -8,16 +8,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
+import ConfirmSheet from "../../components/ConfirmSheet";
 import {
   WORK_DAYS,
   MAIN_JOB_START_TIMES,
   getFreeClientTimeText,
   getShiftEndTime,
+  getBookingWindow,
+  formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminTrainerTimeScreen";
 
@@ -30,8 +33,14 @@ const createEmptySchedule = () =>
 export default function AdminTrainerTimeScreen() {
   const { user } = useAuth();
   const [schedule, setSchedule] = useState(() => createEmptySchedule());
+  const [savedWeekStart, setSavedWeekStart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saveState, setSaveState] = useState("idle"); // idle | saving | success | error
+
+  // The week clients are currently booking — the saved schedule is valid for
+  // exactly this interval.
+  const { weekStart: targetWeekStart } = useMemo(() => getBookingWindow(), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,10 +49,13 @@ export default function AdminTrainerTimeScreen() {
       try {
         const snapshot = await getDoc(doc(db, "config", "trainerSchedule"));
         if (!isMounted) return;
-        setSchedule({
-          ...createEmptySchedule(),
-          ...(snapshot.data() ?? {}),
+        const data = snapshot.data() ?? {};
+        const days = createEmptySchedule();
+        WORK_DAYS.forEach((day) => {
+          days[day.key] = data[day.key] ?? null;
         });
+        setSchedule(days);
+        setSavedWeekStart(data.weekStart ?? null);
       } catch (error) {
         console.error("Error loading main job schedule:", error);
         if (isMounted) {
@@ -80,19 +92,27 @@ export default function AdminTrainerTimeScreen() {
   const handleSave = async () => {
     if (!user?.uid) return;
 
-    setSaving(true);
+    setSaveState("saving");
     try {
-      await setDoc(doc(db, "config", "trainerSchedule"), schedule, {
-        merge: true,
+      await setDoc(doc(db, "config", "trainerSchedule"), {
+        ...schedule,
+        weekStart: targetWeekStart,
+        updatedAt: serverTimestamp(),
       });
-      Alert.alert("Spremljeno", "Vrijeme je uspješno spremljeno.");
+      setSavedWeekStart(targetWeekStart);
+      setSaveState("success");
     } catch (error) {
       console.error("Error saving main job schedule:", error);
-      Alert.alert("Greška", "Vrijeme nije spremljeno.");
-    } finally {
-      setSaving(false);
+      setSaveState("error");
     }
   };
+
+  const closeSheet = () => {
+    setShowConfirm(false);
+    setSaveState("idle");
+  };
+
+  const workingDaysCount = WORK_DAYS.filter((day) => schedule[day.key]).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -102,6 +122,25 @@ export default function AdminTrainerTimeScreen() {
         <Text style={styles.subtitle}>
           Odaberi početak svoje 4-satne smjene za svaki radni dan.
         </Text>
+
+        <View style={styles.weekBanner}>
+          <Text style={styles.weekBannerLabel}>VRIJEDI ZA TJEDAN</Text>
+          <Text style={styles.weekBannerValue}>
+            {formatWeekLabel(targetWeekStart)}
+          </Text>
+          {!loading && savedWeekStart !== targetWeekStart && (
+            <Text style={styles.weekBannerWarn}>
+              {savedWeekStart
+                ? "Spremljeni raspored je za stariji tjedan — klijentice ga ne vide. Spremi ga ponovno za ovaj interval."
+                : "Raspored za ovaj tjedan još nije spremljen — klijentice ne mogu rezervirati termine."}
+            </Text>
+          )}
+          {!loading && savedWeekStart === targetWeekStart && (
+            <Text style={styles.weekBannerOk}>
+              ✓ Klijentice vide ovaj raspored pri rezervaciji.
+            </Text>
+          )}
+        </View>
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -177,7 +216,7 @@ export default function AdminTrainerTimeScreen() {
                     </View>
 
                     <View style={styles.summaryBox}>
-                      <Text style={styles.summaryLabel}>Slobodno</Text>
+                      <Text style={styles.summaryLabel}>Termini za klijentice</Text>
                       <Text style={styles.summaryValue}>{freeTimeText}</Text>
                     </View>
                   </View>
@@ -203,16 +242,48 @@ export default function AdminTrainerTimeScreen() {
             </View>
 
             <GeneralButton
-              onPress={handleSave}
-              disabled={saving}
+              onPress={() => setShowConfirm(true)}
               fullWidth
               colors={["#7C3AED", "#7C3AED"]}
             >
-              {saving ? "Spremanje..." : "Spremi vrijeme"}
+              Spremi vrijeme
             </GeneralButton>
           </ScrollView>
         )}
       </View>
+
+      <ConfirmSheet
+        visible={showConfirm}
+        status={saveState}
+        onConfirm={handleSave}
+        onClose={closeSheet}
+        title="Spremi raspored?"
+        subtitle={`Vrijedi za tjedan ${formatWeekLabel(targetWeekStart)}. Odabrala si ${workingDaysCount} od 5 radnih dana.`}
+        confirmLabel="Spremi"
+        successTitle="Spremljeno ✓"
+        successSubtitle="Raspored je ažuriran."
+        errorTitle="Nije spremljeno"
+        errorSubtitle="Provjeri internet vezu i pokušaj ponovo."
+      >
+        {WORK_DAYS.map((day) => {
+          const workStart = schedule[day.key];
+          return (
+            <View key={day.key} style={styles.recapRow}>
+              <Text style={styles.recapDay}>{day.shortLabel.toUpperCase()}</Text>
+              <Text
+                style={[
+                  styles.recapValue,
+                  !workStart && styles.recapValueOff,
+                ]}
+              >
+                {workStart
+                  ? `${workStart}–${getShiftEndTime(workStart)}`
+                  : "Ne radim"}
+              </Text>
+            </View>
+          );
+        })}
+      </ConfirmSheet>
     </SafeAreaView>
   );
 }

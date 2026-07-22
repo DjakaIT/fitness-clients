@@ -3,12 +3,15 @@ import { View, Text, TouchableOpacity, Animated } from "react-native";
 
 import { House, VideoCamera, User } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import styles from "../styles/Components/StylesBottomBar";
-
-const PRIMARY = "#6366F1";
-const INACTIVE = "#94A3B8";
+import { makeStyles } from "../styles/Components/StylesBottomBar";
+import { useTheme, useThemedStyles } from "../context/ThemeContext";
 
 const TabItem = ({ label, Icon, isActive, onPress }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const primary = theme.accent;
+  const inactive = theme.textSecondary;
+
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(isActive ? 1 : 0.6)).current;
 
@@ -38,9 +41,9 @@ const TabItem = ({ label, Icon, isActive, onPress }) => {
         <Icon
           size={24}
           weight={isActive ? "fill" : "regular"}
-          color={isActive ? PRIMARY : INACTIVE}
+          color={isActive ? primary : inactive}
         />
-        <Text style={[styles.label, { color: isActive ? PRIMARY : INACTIVE }]}>
+        <Text style={[styles.label, { color: isActive ? primary : inactive }]}>
           {label}
         </Text>
       </Animated.View>
@@ -50,6 +53,7 @@ const TabItem = ({ label, Icon, isActive, onPress }) => {
 
 const BottomBar = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
 
   const tabConfig = {
     Home: { label: "Početna", Icon: House },

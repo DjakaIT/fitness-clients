@@ -7,10 +7,12 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
+import { CaretLeft } from "phosphor-react-native";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useAddAppointment from "../../../hooks/useAddAppointment";
 import useCancelAppointment from "../../../hooks/useCancelAppointment";
 import useTrainerSchedule from "../../../hooks/useTrainerSchedule";
@@ -23,11 +25,13 @@ import {
   formatDateShort,
   formatDateLong,
 } from "../../../../backend/utils/appointmentConfig";
-import { styles } from "../../../styles/UI/InPerson/StylesAddAppointmentScreen";
+import { makeStyles } from "../../../styles/UI/InPerson/StylesAddAppointmentScreen";
 
 export default function AddAppointmentScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { addMultipleAppointments, isAdding } = useAddAppointment();
   const { cancelMultiple, isCancelling } = useCancelAppointment();
 
@@ -49,6 +53,10 @@ export default function AddAppointmentScreen() {
 
   const loading = scheduleLoading || slotsLoading;
   const isBusy = isAdding || isCancelling;
+
+  // The trainer's schedule counts only if it was saved for exactly this
+  // booking week — a schedule from an older week would show wrong times.
+  const scheduleIsCurrent = schedule?.weekStart === weekStart;
 
   // Pre-populate from existing bookings once data loads
   useEffect(() => {
@@ -155,14 +163,15 @@ export default function AddAppointmentScreen() {
   // ─── Booking closed ─────────────────────────────────────────────────────────
   if (!isOpen) {
     return (
-      <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
+      <View style={styles.screen}>
+        <StatusBar style={theme.statusBar} />
         <SafeAreaView style={styles.safeArea}>
           <ScrollView contentContainerStyle={styles.container}>
             <Pressable
               style={styles.backBtn}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.backText}>← Natrag</Text>
+              <CaretLeft size={20} color={theme.textPrimary} />
             </Pressable>
             <Text style={styles.title}>Rezervacija termina</Text>
             <Text style={styles.subtitle}>
@@ -182,20 +191,21 @@ export default function AddAppointmentScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   // ─── Booking open ────────────────────────────────────────────────────────────
   return (
-    <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
+    <View style={styles.screen}>
+      <StatusBar style={theme.statusBar} />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← Natrag</Text>
+            <CaretLeft size={20} color={theme.textPrimary} />
           </Pressable>
 
           <Text style={styles.title}>Rezervacija termina</Text>
@@ -206,14 +216,14 @@ export default function AddAppointmentScreen() {
 
           {loading ? (
             <ActivityIndicator
-              color="#F497BA"
+              color={theme.accent}
               size="large"
               style={{ marginTop: 40 }}
             />
-          ) : schedule === null ? (
+          ) : !scheduleIsCurrent ? (
             <View style={styles.closedCard}>
               <Text style={styles.closedTitle}>
-                Trenerica još nije unijela raspored.
+                Trenerica još nije unijela raspored za ovaj tjedan.
               </Text>
               <Text style={styles.closedText}>Pokušaj malo kasnije.</Text>
             </View>
@@ -380,6 +390,6 @@ export default function AddAppointmentScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }

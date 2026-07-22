@@ -1,13 +1,5 @@
-import React from "react";
-import { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Pressable,
-  Modal,
-} from "react-native";
+import React, { useState } from "react";
+import { View, Text, Image, TouchableOpacity, Pressable, Modal } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,32 +7,47 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import Ionicons from "@react-native-vector-icons/ionicons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { Moon, Sun } from "phosphor-react-native";
 import { useAuth } from "../context/AuthContext";
-import { styles } from "../styles/StylesHomeScreen";
-import { colors } from "../styles/theme";
+import { useTheme, useThemedStyles } from "../context/ThemeContext";
+import { makeStyles } from "../styles/Components/StylesProfileModal";
+
+function Avatar({ uri, initial, style, textStyle, styles }) {
+  if (uri) {
+    return (
+      <View style={style}>
+        <Image source={{ uri }} style={styles.avatarImage} />
+      </View>
+    );
+  }
+  return (
+    <View style={style}>
+      <View style={styles.avatarFallback}>
+        <Text style={[styles.avatarFallbackText, textStyle]}>{initial}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function ProfilePageComponent() {
-  const navigate = useNavigation();
   const { user, logout } = useAuth();
+  const { theme, mode, setMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   const modalScale = useSharedValue(0.85);
   const modalTranslateY = useSharedValue(20);
   const modalOpacity = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
 
+  const initial = (user?.displayName ?? "?").charAt(0).toUpperCase();
+
   const openModal = () => {
-    setProfileModalVisible(true);
+    setVisible(true);
     backdropOpacity.value = withTiming(1, { duration: 250 });
     modalOpacity.value = withTiming(1, { duration: 250 });
-    modalScale.value = withSpring(1, {
-      damping: 18,
-      stiffness: 200,
-      mass: 0.8,
-    });
+    modalScale.value = withSpring(1, { damping: 18, stiffness: 200, mass: 0.8 });
     modalTranslateY.value = withSpring(0, {
       damping: 18,
       stiffness: 200,
@@ -54,7 +61,7 @@ export default function ProfilePageComponent() {
     modalScale.value = withTiming(0.85, { duration: 200 });
     modalTranslateY.value = withTiming(20, { duration: 200 });
     setTimeout(() => {
-      setProfileModalVisible(false);
+      setVisible(false);
     }, 220);
   };
 
@@ -62,13 +69,6 @@ export default function ProfilePageComponent() {
     closeModal();
     setTimeout(() => {
       logout();
-    }, 250);
-  };
-
-  const handleProfile = () => {
-    closeModal();
-    setTimeout(() => {
-      navigate.navigate("Profile");
     }, 250);
   };
 
@@ -86,124 +86,107 @@ export default function ProfilePageComponent() {
 
   return (
     <>
-      <View style={styles.profileImageContainer}>
-        <TouchableOpacity onPress={openModal} activeOpacity={0.7}>
-          <Image
-            source={{
-              uri: user?.photoURL,
-            }}
-            style={styles.profileImage}
-          />
-          <View style={styles.notificationDot} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity onPress={openModal} activeOpacity={0.7}>
+        <Avatar
+          uri={user?.photoURL}
+          initial={initial}
+          style={styles.avatarButton}
+          styles={styles}
+        />
+      </TouchableOpacity>
 
       <Modal
-        visible={profileModalVisible}
+        visible={visible}
         transparent
         animationType="none"
         statusBarTranslucent
         onRequestClose={closeModal}
       >
-        <Animated.View style={[styles.modalBackdrop, backdropAnimatedStyle]}>
+        <Animated.View style={[styles.backdrop, backdropAnimatedStyle]}>
           <Pressable style={styles.backdropPressable} onPress={closeModal} />
         </Animated.View>
 
-        <View style={styles.modalCentering}>
-          <Animated.View style={[styles.modalContainer, modalAnimatedStyle]}>
-            <LinearGradient
-              colors={["rgba(101, 75, 85, 0.97)", "rgba(75, 6, 34, 0.97)"]}
-              style={styles.modalGradient}
+        <View style={styles.centering} pointerEvents="box-none">
+          <Animated.View style={[styles.card, modalAnimatedStyle]}>
+            <TouchableOpacity
+              onPress={closeModal}
+              style={styles.closeBtn}
+              activeOpacity={0.6}
             >
+              <Ionicons name="close" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.userSection}>
+              <Avatar
+                uri={user?.photoURL}
+                initial={initial}
+                style={styles.modalAvatar}
+                textStyle={{ fontSize: 30 }}
+                styles={styles}
+              />
+              <Text style={styles.userName}>{user?.displayName || "Korisnica"}</Text>
+              <Text style={styles.userEmail}>{user?.email || ""}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Theme toggle */}
+            <View style={styles.themeRow}>
               <TouchableOpacity
-                onPress={closeModal}
-                style={styles.modalCloseBtn}
-                activeOpacity={0.6}
+                activeOpacity={0.8}
+                onPress={() => setMode("light")}
+                style={[
+                  styles.themeOption,
+                  mode === "light" && styles.themeOptionActive,
+                ]}
               >
-                <Ionicons name="close" size={22} color={colors.textSecondary} />
+                <Sun
+                  size={18}
+                  weight={mode === "light" ? "fill" : "regular"}
+                  color={mode === "light" ? theme.accent : theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    mode === "light" && styles.themeOptionTextActive,
+                  ]}
+                >
+                  Svijetla
+                </Text>
               </TouchableOpacity>
 
-              {/* User info */}
-              <View style={styles.modalUserSection}>
-                <Image
-                  source={{
-                    uri: user?.photoURL,
-                  }}
-                  style={styles.modalAvatar}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setMode("dark")}
+                style={[
+                  styles.themeOption,
+                  mode === "dark" && styles.themeOptionActive,
+                ]}
+              >
+                <Moon
+                  size={18}
+                  weight={mode === "dark" ? "fill" : "regular"}
+                  color={mode === "dark" ? theme.accent : theme.textSecondary}
                 />
-                <Text style={styles.modalUserName}>
-                  {user?.displayName || "User"}
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    mode === "dark" && styles.themeOptionTextActive,
+                  ]}
+                >
+                  Tamna
                 </Text>
-                <Text style={styles.modalUserEmail}>{user?.email || ""}</Text>
-              </View>
+              </TouchableOpacity>
+            </View>
 
-              <View style={styles.modalDivider} />
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  onPress={handleProfile}
-                  activeOpacity={0.7}
-                  style={styles.modalBtn}
-                >
-                  <LinearGradient
-                    colors={[
-                      "rgba(244, 151, 186, 0.2)",
-                      "rgba(244, 151, 186, 0.08)",
-                    ]}
-                    style={styles.modalBtnGradient}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={colors.accentPink}
-                    />
-                    <Text style={styles.modalBtnText}>Profil</Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.textSecondary}
-                      style={styles.modalBtnChevron}
-                    />
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleLogout}
-                  activeOpacity={0.7}
-                  style={styles.modalBtn}
-                >
-                  <LinearGradient
-                    colors={[
-                      "rgba(239, 68, 68, 0.15)",
-                      "rgba(239, 68, 68, 0.05)",
-                    ]}
-                    style={styles.modalBtnGradient}
-                  >
-                    <Ionicons
-                      name="log-out-outline"
-                      size={20}
-                      color="#EF4444"
-                    />
-                    <Text style={[styles.modalBtnText, { color: "#EF4444" }]}>
-                      Odjavi se
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color="rgba(239, 68, 68, 0.4)"
-                      style={styles.modalBtnChevron}
-                    />
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-
-              <LinearGradient
-                colors={[colors.accentPink, "#F2829E", "transparent"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.modalAccentLine}
-              />
-            </LinearGradient>
+            <TouchableOpacity
+              onPress={handleLogout}
+              activeOpacity={0.7}
+              style={styles.logoutBtn}
+            >
+              <Ionicons name="log-out-outline" size={20} color={theme.danger} />
+              <Text style={styles.logoutText}>Odjavi se</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>

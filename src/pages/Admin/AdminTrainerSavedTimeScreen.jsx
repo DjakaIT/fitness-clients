@@ -9,6 +9,8 @@ import {
   WORK_DAYS,
   getFreeClientTimeText,
   getShiftEndTime,
+  getBookingWindow,
+  formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminTrainerSavedTimeScreen";
 
@@ -21,7 +23,10 @@ const createEmptySchedule = () =>
 export default function AdminTrainerSavedTimeScreen() {
   const { user } = useAuth();
   const [schedule, setSchedule] = useState(() => createEmptySchedule());
+  const [savedWeekStart, setSavedWeekStart] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const { weekStart: targetWeekStart } = getBookingWindow();
 
   useEffect(() => {
     let isMounted = true;
@@ -37,10 +42,13 @@ export default function AdminTrainerSavedTimeScreen() {
 
         if (!isMounted) return;
 
-        setSchedule({
-          ...createEmptySchedule(),
-          ...(snapshot.data() ?? {}),
+        const data = snapshot.data() ?? {};
+        const days = createEmptySchedule();
+        WORK_DAYS.forEach((day) => {
+          days[day.key] = data[day.key] ?? null;
         });
+        setSchedule(days);
+        setSavedWeekStart(data.weekStart ?? null);
       } catch (error) {
         console.error("Error loading saved trainer time:", error);
         if (isMounted) {
@@ -87,6 +95,24 @@ export default function AdminTrainerSavedTimeScreen() {
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
           >
+            <View style={styles.weekBanner}>
+              <Text style={styles.weekBannerLabel}>
+                {savedWeekStart ? "VRIJEDI ZA TJEDAN" : "TJEDAN NIJE OZNAČEN"}
+              </Text>
+              {savedWeekStart && (
+                <Text style={styles.weekBannerValue}>
+                  {formatWeekLabel(savedWeekStart)}
+                </Text>
+              )}
+              {savedWeekStart !== targetWeekStart && (
+                <Text style={styles.weekBannerWarn}>
+                  Klijentice trenutno rezerviraju tjedan{" "}
+                  {formatWeekLabel(targetWeekStart)} — ovaj raspored za njih ne
+                  vrijedi dok ga ponovno ne spremiš.
+                </Text>
+              )}
+            </View>
+
             {WORK_DAYS.map((day) => {
               const workStart = schedule[day.key];
               const shiftEnd = getShiftEndTime(workStart);

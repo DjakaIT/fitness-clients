@@ -4,15 +4,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
   Platform,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import {
-  CaretLeft,
   Barbell,
   ForkKnife,
   ChatCircle,
@@ -22,7 +19,33 @@ import ImpressionsRatingCard from "../components/ImpressionRatingCard";
 import ImpressionsBox from "../components/ImpressionBox";
 import ProfilePageComponent from "../components/ProfilePageComponent";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { usePostReviews } from "../hooks/usePostReviews";
+
+// Original (light) palette left untouched; dark aligns to the coral theme.
+const palette = (isDark, t) =>
+  isDark
+    ? {
+        bg: t.bg,
+        text: t.textPrimary,
+        accent: t.accent,
+        sub: t.textSecondary,
+        onAccent: t.onAccent,
+        // dark surfaces replace the light pastel rating-card tints
+        cardTraining: t.card,
+        cardEating: t.card,
+        cardComm: t.card,
+      }
+    : {
+        bg: "#FFF",
+        text: "#000",
+        accent: "#8B5CF6",
+        sub: "#6B7280",
+        onAccent: "#FFF",
+        cardTraining: "#F0E7FF",
+        cardEating: "#FFF7ED",
+        cardComm: "#F0F9FF",
+      };
 
 const ImpressionsScreen = ({ navigation }) => {
   const [ratings, setRatings] = useState({
@@ -32,8 +55,13 @@ const ImpressionsScreen = ({ navigation }) => {
   });
   const [reflection, setReflection] = useState("");
   const { user } = useAuth();
+  const { isDark, theme } = useTheme();
+  const P = palette(isDark, theme);
+  const styles = makeStyles(P);
 
   const { submitReview, isSubmitting } = usePostReviews();
+
+  const firstName = user?.displayName?.split(" ")[0] || "Draga";
 
   const handleSubmitting = async () => {
     const response = await submitReview(
@@ -62,17 +90,12 @@ const ImpressionsScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.container}
         >
-          <View style={styles.navBar}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <CaretLeft color="#000" size={28} weight="bold" />
-            </TouchableOpacity>
+          <View style={styles.topRow}>
+            <Text style={styles.userName}>{firstName},</Text>
             <ProfilePageComponent />
           </View>
 
           <View style={styles.titleSection}>
-            <Text style={styles.userName}>
-              {user?.displayName?.split(" ")[0] || userData.name},
-            </Text>
             <Text style={styles.mainTitle}>
               kako ti je prošao protekli tjedan?
             </Text>
@@ -86,7 +109,7 @@ const ImpressionsScreen = ({ navigation }) => {
             title="Trening"
             subtitle="Volumen, intenzitet i izvedba"
             icon={Barbell}
-            backgroundColor="#F0E7FF"
+            backgroundColor={P.cardTraining}
             rating={ratings.training}
             setRating={(v) => setRatings({ ...ratings, training: v })}
           />
@@ -95,7 +118,7 @@ const ImpressionsScreen = ({ navigation }) => {
             title="Hrana"
             subtitle="Nutritivna kvaliteta i vremensko planiranje"
             icon={ForkKnife}
-            backgroundColor="#FFF7ED"
+            backgroundColor={P.cardEating}
             rating={ratings.eating}
             setRating={(v) => setRatings({ ...ratings, eating: v })}
           />
@@ -104,7 +127,7 @@ const ImpressionsScreen = ({ navigation }) => {
             title="Komunikacija"
             subtitle="Učestalost i jasnoća"
             icon={ChatCircle}
-            backgroundColor="#F0F9FF"
+            backgroundColor={P.cardComm}
             rating={ratings.communication}
             setRating={(v) => setRatings({ ...ratings, communication: v })}
           />
@@ -117,7 +140,7 @@ const ImpressionsScreen = ({ navigation }) => {
             disabled={isSubmitting}
           >
             <PaperPlaneTilt
-              color="#FFF"
+              color={P.onAccent}
               size={20}
               weight="fill"
               style={{ marginRight: 8 }}
@@ -132,50 +155,35 @@ const ImpressionsScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#FFF" },
-  container: { paddingHorizontal: 24, paddingVertical: 10 },
-  navBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
-  },
-  profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "#10B981",
-  },
-  titleSection: { marginBottom: 30 },
-  userName: { fontSize: 32, fontWeight: "900", color: "#000" },
-  mainTitle: {
-    fontSize: 32,
-    color: "#8B5CF6",
-    fontWeight: "700",
-    marginTop: -4,
-  },
-  subMessage: { fontSize: 15, color: "#6B7280", marginTop: 10 },
-  submitBtn: {
-    backgroundColor: "#8B5CF6",
-    flexDirection: "row",
-    padding: 18,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  btnText: { color: "#FFF", fontWeight: "800", fontSize: 18 },
-  footerText: {
-    textAlign: "center",
-    color: "#9CA3AF",
-    fontSize: 11,
-    fontWeight: "bold",
-    marginTop: 20,
-    letterSpacing: 1,
-  },
-});
+const makeStyles = (P) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: P.bg },
+    container: { paddingHorizontal: 24, paddingVertical: 10 },
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 40,
+    },
+    titleSection: { marginBottom: 30 },
+    userName: { fontSize: 32, fontWeight: "900", color: P.text },
+    mainTitle: {
+      fontSize: 32,
+      color: P.accent,
+      fontWeight: "700",
+      marginTop: -2,
+    },
+    subMessage: { fontSize: 15, color: P.sub, marginTop: 10 },
+    submitBtn: {
+      backgroundColor: P.accent,
+      flexDirection: "row",
+      padding: 18,
+      borderRadius: 16,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 10,
+    },
+    btnText: { color: P.onAccent, fontWeight: "800", fontSize: 18 },
+  });
 
 export default ImpressionsScreen;

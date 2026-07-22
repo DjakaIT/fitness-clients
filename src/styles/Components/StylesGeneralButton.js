@@ -34,8 +34,8 @@ export const styles = StyleSheet.create({
   },
   text: {
     color: "#FFFFFF",
-    fontWeight: "700",
-    letterSpacing: 0.5,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.3,
     textAlign: "center",
   },
   disabled: {

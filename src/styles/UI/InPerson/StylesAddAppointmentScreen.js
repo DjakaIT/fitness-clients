@@ -1,229 +1,244 @@
 import { StyleSheet } from "react-native";
+import { radius } from "../../clientTheme";
 
-export const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  safeArea: { flex: 1 },
-  container: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 48 },
+export const makeStyles = (t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.bg },
+    safeArea: { flex: 1 },
+    container: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 48 },
 
-  backBtn: { marginBottom: 24 },
-  backText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#DBC1C9" },
-  title: {
-    fontSize: 28,
-    fontFamily: "Outfit_700Bold",
-    color: "#FFFFFF",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "#DBC1C9",
-    marginBottom: 24,
-  },
+    // ── Header ──
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 30,
+      fontFamily: "Outfit_700Bold",
+      color: t.textPrimary,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: t.textSecondary,
+      marginBottom: 24,
+    },
 
-  label: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: "#DBC1C9",
-    letterSpacing: 1.3,
-    marginBottom: 12,
-  },
+    label: {
+      fontSize: 11,
+      fontFamily: "Inter_600SemiBold",
+      color: t.textSecondary,
+      letterSpacing: 1.4,
+      marginBottom: 12,
+    },
 
-  // ── Closed / info cards ──
-  closedCard: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 18,
-    padding: 24,
-    alignItems: "center",
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  closedIcon: { fontSize: 36, marginBottom: 12 },
-  closedTitle: {
-    fontSize: 17,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  closedText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "#DBC1C9",
-    textAlign: "center",
-  },
-  closedDate: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: "#F497BA",
-    marginTop: 6,
-    textAlign: "center",
-  },
+    // ── Closed / info cards ──
+    closedCard: {
+      backgroundColor: t.card,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+      padding: 28,
+      alignItems: "center",
+      marginTop: 16,
+      ...t.cardShadow,
+    },
+    closedIcon: { fontSize: 36, marginBottom: 12 },
+    closedTitle: {
+      fontSize: 17,
+      fontFamily: "PlusJakartaSans_600SemiBold",
+      color: t.textPrimary,
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    closedText: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: t.textSecondary,
+      textAlign: "center",
+    },
+    closedDate: {
+      fontSize: 16,
+      fontFamily: "Inter_600SemiBold",
+      color: t.accent,
+      marginTop: 6,
+      textAlign: "center",
+    },
 
-  // ── Slots preview ──
-  slotsBox: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    gap: 8,
-  },
-  slotsEmpty: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.35)",
-    textAlign: "center",
-    paddingVertical: 8,
-  },
-  slotRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 12,
-    padding: 12,
-    gap: 10,
-  },
-  slotInfo: { flex: 1 },
-  slotDate: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: "#DBC1C9",
-  },
-  slotTime: {
-    fontSize: 20,
-    fontFamily: "Outfit_700Bold",
-    color: "#F497BA",
-    marginTop: 1,
-  },
-  slotRemoveBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(239,68,68,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  slotRemoveText: {
-    fontSize: 12,
-    color: "#FCA5A5",
-    fontFamily: "Inter_600SemiBold",
-  },
+    // ── Slots preview ──
+    slotsBox: {
+      backgroundColor: t.card,
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+      padding: 12,
+      marginBottom: 8,
+      gap: 8,
+      ...t.cardShadow,
+    },
+    slotsEmpty: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: t.textTertiary,
+      textAlign: "center",
+      paddingVertical: 10,
+    },
+    slotRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: t.cardElevated,
+      borderRadius: 14,
+      padding: 14,
+      gap: 10,
+    },
+    slotInfo: { flex: 1 },
+    slotDate: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+    },
+    slotTime: {
+      fontSize: 22,
+      fontFamily: "Outfit_700Bold",
+      color: t.textPrimary,
+      marginTop: 1,
+    },
+    slotRemoveBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: t.dangerSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    slotRemoveText: {
+      fontSize: 12,
+      color: t.danger,
+      fontFamily: "Inter_600SemiBold",
+    },
 
-  // ── Counter ──
-  counterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-    paddingHorizontal: 2,
-  },
-  counterText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.35)",
-  },
-  counterHint: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "#F497BA",
-  },
+    // ── Counter ──
+    counterRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 4,
+      paddingHorizontal: 2,
+    },
+    counterText: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: t.textTertiary,
+    },
+    counterHint: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: t.accent,
+    },
 
-  // ── Date chips ──
-  dateList: { gap: 8, marginBottom: 20 },
-  dateChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  dateChipText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.5)",
-  },
-  chipAdded: {
-    backgroundColor: "rgba(52, 211, 153, 0.1)",
-    borderColor: "rgba(52, 211, 153, 0.35)",
-  },
-  chipTextAdded: { color: "#34D399" },
-  addedBadge: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-    color: "#34D399",
-  },
-  fullBadge: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.3)",
-  },
+    // ── Date chips ──
+    dateList: { gap: 10, marginBottom: 24 },
+    dateChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      borderRadius: radius.chip,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+    },
+    dateChipText: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+    },
+    chipAdded: {
+      backgroundColor: t.successSoft,
+      borderColor: t.successSoft,
+    },
+    chipTextAdded: { color: t.success },
+    addedBadge: {
+      fontSize: 14,
+      fontFamily: "Inter_600SemiBold",
+      color: t.success,
+    },
+    fullBadge: {
+      fontSize: 11,
+      fontFamily: "Inter_500Medium",
+      color: t.textTertiary,
+    },
 
-  // ── Time grid ──
-  timeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16,
-  },
-  timeChip: {
-    width: "22%",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  timeChipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.5)",
-  },
-  chipTaken: {
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderColor: "rgba(255,255,255,0.06)",
-  },
-  chipTextTaken: { color: "rgba(255,255,255,0.2)" },
+    // ── Time grid ──
+    timeGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+      marginBottom: 16,
+    },
+    timeChip: {
+      width: "22%",
+      paddingVertical: 13,
+      borderRadius: 14,
+      alignItems: "center",
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+    },
+    timeChipText: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+    },
+    chipTaken: {
+      backgroundColor: t.cardElevated,
+      borderColor: t.borderSoft,
+    },
+    chipTextTaken: { color: t.textTertiary },
 
-  // ── Shared active / disabled ──
-  chipActive: { backgroundColor: "#7C3AED", borderColor: "#7C3AED" },
-  chipTextActive: { color: "#FFFFFF" },
-  chipDisabled: { opacity: 0.35 },
-  chipTextDisabled: { color: "rgba(255,255,255,0.25)" },
+    // ── Shared active / disabled ──
+    chipActive: { backgroundColor: t.accent, borderColor: t.accent },
+    chipTextActive: { color: t.onAccent, fontFamily: "Inter_600SemiBold" },
+    chipDisabled: { opacity: 0.4 },
+    chipTextDisabled: { color: t.textTertiary },
 
-  // ── Add slot button ──
-  addSlotBtn: {
-    backgroundColor: "rgba(124, 58, 237, 0.2)",
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.4)",
-    marginBottom: 4,
-  },
-  addSlotBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#C4B5FD",
-  },
+    // ── Add slot button ──
+    addSlotBtn: {
+      backgroundColor: t.accentSoft,
+      borderRadius: radius.chip,
+      paddingVertical: 15,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: t.accentBorder,
+      marginBottom: 4,
+    },
+    addSlotBtnText: {
+      fontSize: 15,
+      fontFamily: "Inter_600SemiBold",
+      color: t.accent,
+    },
 
-  // ── Submit ──
-  submitBtn: {
-    backgroundColor: "#7C3AED",
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  submitBtnDisabled: { opacity: 0.35 },
-  submitBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
-  },
-});
+    // ── Submit ──
+    submitBtn: {
+      backgroundColor: t.accent,
+      borderRadius: 20,
+      paddingVertical: 18,
+      alignItems: "center",
+      ...t.accentShadow,
+    },
+    submitBtnDisabled: { opacity: 0.4, shadowOpacity: 0, elevation: 0 },
+    submitBtnText: {
+      fontSize: 16,
+      fontFamily: "Inter_600SemiBold",
+      color: t.onAccent,
+    },
+  });

@@ -27,7 +27,40 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#6B7280",
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  weekBanner: {
+    backgroundColor: "#F5F3FF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E9E3FB",
+    padding: 14,
+    marginBottom: 16,
+  },
+  weekBannerLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    fontFamily: "Inter_600SemiBold",
+    color: "#8B7FB0",
+    marginBottom: 3,
+  },
+  weekBannerValue: {
+    fontSize: 17,
+    fontFamily: "Outfit_700Bold",
+    color: "#7C3AED",
+  },
+  weekBannerWarn: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#B45309",
+    lineHeight: 19,
+    marginTop: 8,
+  },
+  weekBannerOk: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#059669",
+    marginTop: 8,
   },
   dayCard: {
     backgroundColor: "#FFFFFF",
@@ -53,24 +86,31 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
+    minWidth: 62,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
     borderRadius: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
   },
   chipActive: {
-    backgroundColor: "rgba(124, 58, 237, 0.12)",
+    backgroundColor: "#7C3AED",
     borderColor: "#7C3AED",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 4,
   },
   chipText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
     color: "#374151",
   },
   chipTextActive: {
-    color: "#7C3AED",
+    color: "#FFFFFF",
   },
   offChip: {
     backgroundColor: "#FFF1F2",
@@ -134,7 +174,7 @@ export const styles = StyleSheet.create({
   weeklySummaryDay: {
     width: 48,
     fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     color: "#7C3AED",
   },
   weeklySummaryText: {
@@ -147,5 +187,27 @@ export const styles = StyleSheet.create({
   saveButton: {
     marginTop: 16,
     marginBottom: 24,
+  },
+  recapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  recapDay: {
+    width: 48,
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+  },
+  recapValue: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
+  },
+  recapValueOff: {
+    color: "#9CA3AF",
+    fontFamily: "Inter_500Medium",
   },
 });

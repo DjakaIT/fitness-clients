@@ -1,146 +1,216 @@
-import React from "react";
-import { View, Text, Dimensions, ScrollView } from "react-native";
-
+import React, { useRef } from "react";
+import {
+  Animated,
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
-import GeneralButton from "../../components/GeneralButton";
+import {
+  Barbell,
+  VideoCamera,
+  ChatCircleText,
+  CaretRight,
+  TrendDown,
+  TrendUp,
+} from "phosphor-react-native";
 import { useAuth } from "../../context/AuthContext";
-import { styles } from "../../styles/StylesHomeScreen";
+import { useTheme, useThemedStyles } from "../../context/ThemeContext";
+import useClientMeasurements from "../../hooks/useClientMeasurements";
+import { formatDateShort } from "../../../backend/utils/appointmentConfig";
+import { makeStyles } from "../../styles/StylesHomeScreen";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 
-const colors = {
-  bgDeep: "#4b0622",
-  bgSoft: "#654b55",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#DBC1C9",
-  accentPink: "#F497BA",
-  cardBg: "rgba(255, 255, 255, 0.1)",
-  cardBorder: "rgba(255, 255, 255, 0.2)",
-  success: "#34D399",
-};
+function PressableScale({ onPress, style, containerStyle, children }) {
+  const scale = useRef(new Animated.Value(1)).current;
 
-const userData = {
-  name: "Klijentica",
-  currentWeight: 68.5,
-  startWeight: 75.0,
-  goalWeight: 62.0,
-  progressPercent: 0.65,
-};
+  const pressIn = () =>
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 60,
+      bounciness: 0,
+    }).start();
+
+  const pressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+
+  return (
+    <Pressable
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      onPress={onPress}
+      style={containerStyle}
+    >
+      <Animated.View style={[style, { transform: [{ scale }] }]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const navigate = useNavigation();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { measurements, loading } = useClientMeasurements(user?.uid);
 
-  const lostSoFar = (userData.startWeight - userData.currentWeight).toFixed(1);
-  const percentDisplay = Math.round(userData.progressPercent * 100);
+  const firstName = user?.displayName?.split(" ")[0] || "Klijentice";
+
+  // Real weight progress: newest and oldest entries that actually have a weight.
+  const weightEntries = measurements.filter(
+    (m) => m.weight && !Number.isNaN(parseFloat(m.weight)),
+  );
+  const currentEntry = weightEntries[0];
+  const startEntry = weightEntries[weightEntries.length - 1];
+  const current = currentEntry ? parseFloat(currentEntry.weight) : null;
+  const start = startEntry ? parseFloat(startEntry.weight) : null;
+
+  // Success toward a weight-loss goal = share of starting weight already shed.
+  const pct =
+    start != null && current != null && start > 0
+      ? ((start - current) / start) * 100
+      : null;
+  const hasProgress = weightEntries.length >= 2 && pct != null;
+  const lost = pct != null && pct > 0.05;
+  const gained = pct != null && pct < -0.05;
+  const pctText = pct != null ? `${Math.abs(pct).toFixed(1)}%` : "–";
+  const pctColor = lost
+    ? theme.success
+    : gained
+      ? theme.accent
+      : theme.textPrimary;
+  const pctCaption = lost
+    ? "manje nego na početku"
+    : gained
+      ? "više nego na početku"
+      : "isto kao na početku";
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={[colors.bgSoft, colors.bgDeep]}
-        style={styles.background}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* --- HEADER --- */}
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.greeting}>Dobrodošla,</Text>
-                <Text style={styles.headerTitle}>
-                  {user?.displayName?.split(" ")[0] || userData.name}
+      <StatusBar style={theme.statusBar} />
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Header ── */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.greeting}>Dobrodošla,</Text>
+              <Text style={styles.headerTitle}>{firstName}</Text>
+            </View>
+            <ProfilePageComponent />
+          </View>
+
+          {/* ── Hero: progress ── */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroHeader}>
+              <Text style={styles.heroLabel}>MOJ NAPREDAK</Text>
+              {currentEntry && (
+                <Text style={styles.heroDate}>
+                  {formatDateShort(currentEntry.date)}
                 </Text>
-              </View>
-
-              <ProfilePageComponent />
+              )}
             </View>
 
-            {/* --- GOAL / PROGRESS CARD --- */}
-            <View style={styles.glassCard}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Moj napredak</Text>
-                <Text style={styles.percentText}>{percentDisplay}%</Text>
-              </View>
-
-              {/* Custom Progress Bar */}
-              <View style={styles.progressBarBg}>
-                <LinearGradient
-                  colors={[colors.accentPink, "#F2829E"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${percentDisplay}%` },
-                  ]}
-                />
-              </View>
-
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Trenutno</Text>
-                  <Text style={styles.statValue}>
-                    {userData.currentWeight} <Text style={styles.unit}>kg</Text>
+            {loading ? (
+              <ActivityIndicator
+                color={theme.accent}
+                style={{ marginVertical: 20 }}
+              />
+            ) : weightEntries.length === 0 ? (
+              <Text style={styles.emptyNote}>
+                Trenerica još nije unijela tvoja mjerenja. Čim stigne prvo
+                mjerenje, ovdje pratiš svoj napredak.
+              </Text>
+            ) : !hasProgress ? (
+              <>
+                <View style={styles.heroWeightRow}>
+                  <Text style={styles.heroWeight}>{current}</Text>
+                  <Text style={styles.heroWeightUnit}>kg</Text>
+                </View>
+                <Text style={styles.heroPctCaption}>
+                  Zabilježeno prvo mjerenje — napredak se prikazuje od idućeg.
+                </Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.heroPctRow}>
+                  {lost ? (
+                    <TrendDown size={30} weight="bold" color={pctColor} />
+                  ) : gained ? (
+                    <TrendUp size={30} weight="bold" color={pctColor} />
+                  ) : null}
+                  <Text style={[styles.heroPct, { color: pctColor }]}>
+                    {pctText}
                   </Text>
                 </View>
+                <Text style={styles.heroPctCaption}>{pctCaption}</Text>
 
-                <View style={styles.verticalDivider} />
-
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Izgubljeno</Text>
-                  <Text
-                    style={[styles.statValue, { color: colors.accentPink }]}
-                  >
-                    -{lostSoFar}{" "}
-                    <Text style={[styles.unit, { color: colors.accentPink }]}>
-                      kg
-                    </Text>
-                  </Text>
+                <View style={styles.heroStatsRow}>
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatLabel}>Početno</Text>
+                    <Text style={styles.heroStatValue}>{start} kg</Text>
+                  </View>
+                  <View style={styles.heroStatDivider} />
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatLabel}>Trenutno</Text>
+                    <Text style={styles.heroStatValue}>{current} kg</Text>
+                  </View>
                 </View>
+              </>
+            )}
+          </View>
 
-                <View style={styles.verticalDivider} />
+          {/* ── Primary CTA ── */}
+          <PressableScale
+            onPress={() => navigate.navigate("MyWorkouts")}
+            style={styles.ctaButton}
+          >
+            <Barbell size={24} weight="fill" color={theme.onAccent} />
+            <Text style={styles.ctaText}>Moji treninzi</Text>
+            <CaretRight size={20} color={theme.onAccent} />
+          </PressableScale>
 
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Cilj</Text>
-                  <Text style={styles.statValue}>
-                    {userData.goalWeight} <Text style={styles.unit}>kg</Text>
-                  </Text>
-                </View>
+          {/* ── Secondary cards ── */}
+          <View style={styles.gridRow}>
+            <PressableScale
+              onPress={() => navigate.navigate("VideoCategories")}
+              containerStyle={styles.gridItem}
+              style={styles.gridCard}
+            >
+              <View style={styles.gridIconBubble}>
+                <VideoCamera size={22} weight="fill" color={theme.accent} />
               </View>
-            </View>
+              <Text style={styles.gridTitle}>Video zbirka</Text>
+              <Text style={styles.gridCaption}>Vježbe i tehnika</Text>
+            </PressableScale>
 
-            <View style={styles.buttonStack}>
-              <GeneralButton
-                onPress={() => navigate.navigate("VideoCategories")}
-                colors={["#8b5cf6", "#7c3aed"]} // Purple variation
-                fullWidth
-                style={styles.actionButton}
-              >
-                Video zbirka
-              </GeneralButton>
-              <GeneralButton
-                onPress={() => navigate.navigate("Impressions")}
-                colors={["#8b5cf6", "#7c3aed"]} // Purple variation
-                fullWidth
-                style={styles.actionButton}
-              >
-                Dojmovi
-              </GeneralButton>
-              <GeneralButton
-                onPress={() => navigate.navigate("MyWorkouts")}
-                colors={["rgba(255,255,255,0.12)", "rgba(255,255,255,0.08)"]}
-                fullWidth
-                style={styles.actionButton}
-              >
-                Moji treninzi
-              </GeneralButton>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
-
-      {/* --- PROFILE MODAL --- */}
+            <PressableScale
+              onPress={() => navigate.navigate("Impressions")}
+              containerStyle={styles.gridItem}
+              style={styles.gridCard}
+            >
+              <View style={styles.gridIconBubble}>
+                <ChatCircleText size={22} weight="fill" color={theme.accent} />
+              </View>
+              <Text style={styles.gridTitle}>Dojmovi</Text>
+              <Text style={styles.gridCaption}>Tjedni osvrt</Text>
+            </PressableScale>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }

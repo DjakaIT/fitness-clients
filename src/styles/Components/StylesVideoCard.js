@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
 
   title: {
     fontSize: 22,
-    fontFamily: "LatoBold",
+    fontFamily: "Outfit_700Bold",
     color: "#3B0F2E",
     letterSpacing: -0.3,
   },
@@ -51,7 +51,7 @@ export const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontFamily: "LatoBold",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 15,
     color: "#FFFFFF",
   },

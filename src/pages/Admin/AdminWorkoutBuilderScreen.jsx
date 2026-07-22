@@ -7,7 +7,6 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -15,9 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
+import ConfirmSheet from "../../components/ConfirmSheet";
 import { VIDEOS } from "../../../backend/data/videos";
 import useSaveWorkout from "../../hooks/useSaveWorkout";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
+import useDeleteWorkout from "../../hooks/useDeleteWorkout";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
@@ -29,11 +30,20 @@ const CATEGORIES = [...new Set(VIDEOS.map((v) => v.category))];
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
+const vjezbaForm = (n) => {
+  const d = n % 10;
+  const dd = n % 100;
+  if (d === 1 && dd !== 11) return "vježba";
+  if (d >= 2 && d <= 4 && !(dd >= 12 && dd <= 14)) return "vježbe";
+  return "vježbi";
+};
+
 export default function AdminWorkoutBuilderScreen() {
   const navigation = useNavigation();
   const { params } = useRoute();
   const { userId, displayName } = params;
-  const { saveWorkout, isSaving } = useSaveWorkout();
+  const { saveWorkout } = useSaveWorkout();
+  const { deleteWeek } = useDeleteWorkout();
 
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -59,6 +69,12 @@ export default function AdminWorkoutBuilderScreen() {
     weekStart,
   );
   const [prefilled, setPrefilled] = useState(false);
+
+  // Save-preview + delete confirmation sheets
+  const [saveSheet, setSaveSheet] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const [deleteSheet, setDeleteSheet] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState("idle");
 
   // Reset when week changes
   useEffect(() => {
@@ -123,7 +139,15 @@ export default function AdminWorkoutBuilderScreen() {
     });
   };
 
-  const handleSaveAll = async () => {
+  const trainingSummary = Array.from({ length: sessionsPerWeek }, (_, i) => ({
+    n: i + 1,
+    count: (trainingExercises[i] ?? []).length,
+  }));
+  const totalExercises = trainingSummary.reduce((sum, t) => sum + t.count, 0);
+  const hasExistingProgram = existing.length > 0;
+
+  const confirmSave = async () => {
+    setSaveStatus("saving");
     let allOk = true;
     for (let i = 0; i < sessionsPerWeek; i++) {
       const result = await saveWorkout({
@@ -138,11 +162,29 @@ export default function AdminWorkoutBuilderScreen() {
         break;
       }
     }
-    if (allOk) {
-      Alert.alert("Uspješno ✓", `Program za ${displayName} je poslan.`);
+    setSaveStatus(allOk ? "success" : "error");
+  };
+
+  const closeSaveSheet = () => {
+    setSaveSheet(false);
+    setSaveStatus("idle");
+  };
+
+  const confirmDelete = async () => {
+    setDeleteStatus("saving");
+    const res = await deleteWeek(userId, weekStart);
+    if (res.success) {
+      setTrainingExercises({});
+      setActiveTraining(0);
+      setDeleteStatus("success");
     } else {
-      Alert.alert("Greška", "Nije sve uspjelo. Pokušaj ponovo.");
+      setDeleteStatus("error");
     }
+  };
+
+  const closeDeleteSheet = () => {
+    setDeleteSheet(false);
+    setDeleteStatus("idle");
   };
 
   return (
@@ -328,13 +370,27 @@ export default function AdminWorkoutBuilderScreen() {
         {/* Save */}
         <View style={styles.saveRow}>
           <GeneralButton
-            colors={["#7C3AED", "#14b8a6"]}
-            onPress={handleSaveAll}
-            disabled={isSaving}
+            colors={["#7C3AED", "#6D28D9"]}
+            onPress={() => {
+              setSaveStatus("idle");
+              setSaveSheet(true);
+            }}
             fullWidth
           >
-            {isSaving ? "Sprema se..." : "Pošalji program"}
+            Pošalji program
           </GeneralButton>
+
+          {hasExistingProgram && (
+            <Pressable
+              style={styles.deleteBtn}
+              onPress={() => {
+                setDeleteStatus("idle");
+                setDeleteSheet(true);
+              }}
+            >
+              <Text style={styles.deleteBtnText}>Izbriši program</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 
@@ -403,6 +459,57 @@ export default function AdminWorkoutBuilderScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Save preview */}
+      <ConfirmSheet
+        visible={saveSheet}
+        status={saveStatus}
+        onConfirm={confirmSave}
+        onClose={closeSaveSheet}
+        title="Pošalji program?"
+        subtitle={`${displayName} · ${formatWeekLabel(weekStart)}`}
+        confirmLabel="Pošalji"
+        successTitle="Program poslan ✓"
+        successSubtitle={`${displayName} je dobila novi program.`}
+        errorTitle="Nije poslano"
+        errorSubtitle="Provjeri vezu i pokušaj ponovo."
+      >
+        {trainingSummary.map((t) => (
+          <View key={t.n} style={styles.recapRow}>
+            <Text style={styles.recapTrening}>Trening {t.n}</Text>
+            <Text
+              style={[
+                styles.recapCount,
+                t.count === 0 && styles.recapCountMuted,
+              ]}
+            >
+              {t.count} {vjezbaForm(t.count)}
+            </Text>
+          </View>
+        ))}
+        <View style={styles.recapTotalRow}>
+          <Text style={styles.recapTotalLabel}>Ukupno</Text>
+          <Text style={styles.recapTotalValue}>
+            {totalExercises} {vjezbaForm(totalExercises)}
+          </Text>
+        </View>
+      </ConfirmSheet>
+
+      {/* Delete confirmation */}
+      <ConfirmSheet
+        visible={deleteSheet}
+        status={deleteStatus}
+        onConfirm={confirmDelete}
+        onClose={closeDeleteSheet}
+        accent="#EF4444"
+        title="Izbrisati program?"
+        subtitle={`Ovo će ukloniti cijeli program za tjedan ${formatWeekLabel(weekStart)}. Radnja se ne može poništiti.`}
+        confirmLabel="Izbriši"
+        successTitle="Izbrisano"
+        successSubtitle="Program je uklonjen."
+        errorTitle="Nije izbrisano"
+        errorSubtitle="Pokušaj ponovo."
+      />
     </SafeAreaView>
   );
 }

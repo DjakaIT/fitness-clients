@@ -5,24 +5,28 @@ import {
   FlatList,
   Pressable,
   ActivityIndicator,
-  Image,
   Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
+import { Plus, CalendarBlank } from "phosphor-react-native";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useAppointments from "../../../hooks/useAppointments";
 import useCancelAppointment from "../../../hooks/useCancelAppointment";
+import ProfilePageComponent from "../../../components/ProfilePageComponent";
 import {
   formatDateLong,
   canCancel,
 } from "../../../../backend/utils/appointmentConfig";
-import { styles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
+import { makeStyles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
 
 export default function InPersonHomeScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { appointments, loading } = useAppointments(user?.uid);
   const { cancelAppointment, isCancelling } = useCancelAppointment();
 
@@ -44,10 +48,7 @@ export default function InPersonHomeScreen() {
               item.time,
             );
             if (!result.success) {
-              Alert.alert(
-                "Greška",
-                "Otkazivanje nije uspjelo. Pokušaj ponovo.",
-              );
+              Alert.alert("Greška", "Otkazivanje nije uspjelo. Pokušaj ponovo.");
             }
           },
         },
@@ -81,7 +82,8 @@ export default function InPersonHomeScreen() {
   };
 
   return (
-    <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
+    <View style={styles.screen}>
+      <StatusBar style={theme.statusBar} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           {/* Header */}
@@ -91,24 +93,22 @@ export default function InPersonHomeScreen() {
               <Text style={styles.greeting}>Dobrodošla,</Text>
               <Text style={styles.name}>{firstName}!</Text>
             </View>
-            {user?.photoURL ? (
-              <Image source={{ uri: user.photoURL }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Text style={styles.avatarInitial}>
-                  {firstName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <ProfilePageComponent />
           </View>
 
           {/* Appointments */}
           <Text style={styles.sectionLabel}>NADOLAZEĆI TERMINI</Text>
 
           {loading ? (
-            <ActivityIndicator color="#F497BA" style={{ marginTop: 20 }} />
+            <ActivityIndicator color={theme.accent} style={{ marginTop: 20 }} />
           ) : appointments.length === 0 ? (
             <View style={styles.emptyState}>
+              <CalendarBlank
+                size={36}
+                weight="duotone"
+                color={theme.accent}
+                style={styles.emptyIcon}
+              />
               <Text style={styles.emptyText}>Još nemaš zakazanih termina.</Text>
             </View>
           ) : (
@@ -126,15 +126,11 @@ export default function InPersonHomeScreen() {
             style={styles.addButton}
             onPress={() => navigation.navigate("AddAppointment")}
           >
-            <Text style={styles.addButtonText}>+ Dodaj novi termin</Text>
-          </Pressable>
-
-          {/* Logout */}
-          <Pressable style={styles.logoutBtn} onPress={logout}>
-            <Text style={styles.logoutText}>Odjava</Text>
+            <Plus size={20} weight="bold" color={theme.onAccent} />
+            <Text style={styles.addButtonText}>Dodaj novi termin</Text>
           </Pressable>
         </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }

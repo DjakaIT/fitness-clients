@@ -129,8 +129,8 @@ export function getShiftEndTime(workStart) {
 }
 
 export function getFreeClientTimes(workStart) {
-  // ← JEDINA IZMJENA: null (Ne radim) → nema slobodnih termina
-  if (!workStart) return [];
+  // Nema smjene na glavnom poslu → trenerica je slobodna cijeli dan za klijentice.
+  if (!workStart) return [...CLIENT_APPOINTMENT_START_TIMES];
 
   const shiftStartMinutes = timeToMinutes(workStart);
   const shiftEndMinutes = shiftStartMinutes + MAIN_JOB_DURATION_MINUTES;

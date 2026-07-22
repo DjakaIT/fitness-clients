@@ -246,6 +246,65 @@ export const styles = StyleSheet.create({
 
   saveRow: { marginTop: 28 },
 
+  // ── Delete program ──
+  deleteBtn: {
+    marginTop: 12,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  deleteBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#EF4444",
+  },
+
+  // ── Save-preview recap rows (ConfirmSheet) ──
+  recapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  recapTrening: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
+  },
+  recapCount: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+  },
+  recapCountMuted: {
+    color: "#B0B4BB",
+    fontFamily: "Inter_500Medium",
+  },
+  recapTotalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#EEF0F2",
+    paddingTop: 10,
+    marginTop: 2,
+  },
+  recapTotalLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#6B7280",
+  },
+  recapTotalValue: {
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+    color: "#111827",
+  },
+
   // ── Modal ──
   modalOverlay: {
     flex: 1,

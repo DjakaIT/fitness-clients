@@ -29,6 +29,33 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     marginBottom: 20,
   },
+  weekBanner: {
+    backgroundColor: "#F5F3FF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E9E3FB",
+    padding: 14,
+    marginBottom: 16,
+  },
+  weekBannerLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    fontFamily: "Inter_600SemiBold",
+    color: "#8B7FB0",
+    marginBottom: 3,
+  },
+  weekBannerValue: {
+    fontSize: 17,
+    fontFamily: "Outfit_700Bold",
+    color: "#7C3AED",
+  },
+  weekBannerWarn: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#B45309",
+    lineHeight: 19,
+    marginTop: 8,
+  },
   emptyCard: {
     backgroundColor: "#FAFAFA",
     borderWidth: 1,
@@ -104,7 +131,7 @@ export const styles = StyleSheet.create({
   weeklySummaryDay: {
     width: 48,
     fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_600SemiBold",
     color: "#7C3AED",
   },
   weeklySummaryText: {

@@ -1,42 +1,54 @@
 import { StyleSheet } from "react-native";
+import { radius } from "../clientTheme";
 
-export const styles = StyleSheet.create({
-  card: {
-    width: 150,
-    height: 140,
-    borderRadius: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-  icon: {
-    width: 56,
-    height: 56,
-  },
-  name: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-    textAlign: "center",
-  },
-  accent: {
-    marginTop: 10,
-    width: 28,
-    height: 4,
-    borderRadius: 999,
-  },
-});
+// Flex-based so cards fill their grid cell — the 2×2 grid expands to fill the
+// screen height instead of clustering small at the top.
+export const makeStyles = (t) =>
+  StyleSheet.create({
+    card: {
+      flex: 1,
+      borderRadius: radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+      padding: 10,
+      ...t.cardShadow,
+    },
+    imageWrap: {
+      flex: 1,
+      borderRadius: 16,
+      overflow: "hidden",
+      backgroundColor: t.cardElevated,
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    labelWrap: {
+      paddingTop: 12,
+      paddingHorizontal: 4,
+    },
+    name: {
+      fontSize: 15,
+      fontFamily: "PlusJakartaSans_600SemiBold",
+      color: t.textPrimary,
+    },
+    caption: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: t.accent,
+      marginTop: 2,
+    },
+    fallbackImage: {
+      flex: 1,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: t.accentSoft,
+    },
+    fallbackGlyph: {
+      fontSize: 26,
+      fontFamily: "Outfit_700Bold",
+      color: t.accent,
+    },
+  });

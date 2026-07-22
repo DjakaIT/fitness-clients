@@ -75,6 +75,7 @@ export default function AdminUserListScreen() {
         navigation.navigate("AdminClientGeneralScreen", {
           userId: item.id,
           displayName: item.displayName,
+          photoURL: item.photoURL,
         })
       }
     />

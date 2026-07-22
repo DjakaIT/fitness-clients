@@ -1,246 +1,183 @@
 import { StyleSheet } from "react-native";
-import { colors } from "./theme";
+import { radius } from "./clientTheme";
 
-export const styles = StyleSheet.create({
-  container: { flex: 1 },
-  background: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: 24 },
+export const makeStyles = (t) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg },
+    safeArea: { flex: 1 },
+    scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  greeting: {
-    fontFamily: "LatoRegular",
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  headerTitle: {
-    fontFamily: "LatoBold",
-    fontSize: 28,
-    color: colors.textPrimary,
-  },
-  profileImageContainer: {
-    position: "relative",
-  },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: colors.accentPink,
-  },
-  notificationDot: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.success,
-    borderWidth: 2,
-    borderColor: colors.bgDeep,
-  },
+    // ── Header ──
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 16,
+      marginBottom: 32,
+    },
+    greeting: {
+      fontFamily: "Inter_400Regular",
+      fontSize: 15,
+      color: t.textSecondary,
+      marginBottom: 2,
+    },
+    headerTitle: {
+      fontFamily: "Outfit_700Bold",
+      fontSize: 30,
+      color: t.textPrimary,
+    },
 
-  glassCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    marginBottom: 30,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-    width: "100%",
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontFamily: "LatoBold",
-    color: colors.textPrimary,
-    flexShrink: 1,
-    paddingRight: 12,
-  },
-  percentText: {
-    fontSize: 24,
-    fontFamily: "LatoBold",
-    color: colors.accentPink,
-    minWidth: 56,
-    textAlign: "right",
-  },
+    // ── Hero (progress) card ──
+    heroCard: {
+      backgroundColor: t.card,
+      borderRadius: radius.hero,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+      padding: 24,
+      marginBottom: 24,
+      ...t.cardShadow,
+    },
+    heroHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    heroLabel: {
+      fontSize: 11,
+      fontFamily: "Inter_600SemiBold",
+      letterSpacing: 1.4,
+      color: t.textSecondary,
+    },
+    heroDate: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: t.textTertiary,
+    },
+    heroWeightRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      marginBottom: 24,
+    },
+    heroWeight: {
+      fontSize: 48,
+      lineHeight: 52,
+      fontFamily: "Outfit_700Bold",
+      color: t.textPrimary,
+    },
+    heroWeightUnit: {
+      fontSize: 18,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+      marginLeft: 6,
+      marginBottom: 6,
+    },
+    // ── Progress percentage (success toward weight-loss) ──
+    heroPctRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 6,
+    },
+    heroPct: {
+      fontSize: 46,
+      lineHeight: 50,
+      fontFamily: "Outfit_700Bold",
+    },
+    heroPctCaption: {
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+    },
 
-  // Progress Bar
-  progressBarBg: {
-    height: 10,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 5,
-    marginBottom: 25,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 5,
-  },
+    heroStatsRow: {
+      flexDirection: "row",
+      backgroundColor: t.cardElevated,
+      borderRadius: radius.chip,
+      paddingVertical: 14,
+      marginTop: 22,
+    },
+    heroStat: {
+      flex: 1,
+      alignItems: "center",
+    },
+    heroStatDivider: {
+      width: 1,
+      backgroundColor: t.border,
+      marginVertical: 4,
+    },
+    heroStatLabel: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: t.textSecondary,
+      marginBottom: 4,
+    },
+    heroStatValue: {
+      fontSize: 17,
+      fontFamily: "Outfit_700Bold",
+      color: t.textPrimary,
+    },
+    emptyNote: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: t.textSecondary,
+      lineHeight: 21,
+    },
 
-  // Stats Grid
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  statItem: {
-    alignItems: "center",
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-    fontFamily: "LatoRegular",
-  },
-  statValue: {
-    fontSize: 20,
-    color: colors.textPrimary,
-    fontFamily: "LatoBold",
-  },
-  unit: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: "normal",
-  },
-  verticalDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: colors.cardBorder,
-  },
+    // ── Primary CTA ──
+    ctaButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: t.accent,
+      borderRadius: 20,
+      paddingVertical: 18,
+      paddingHorizontal: 22,
+      marginBottom: 16,
+      ...t.accentShadow,
+    },
+    ctaText: {
+      flex: 1,
+      fontSize: 16,
+      fontFamily: "Inter_600SemiBold",
+      color: t.onAccent,
+      marginLeft: 14,
+    },
 
-  buttonStack: {
-    gap: 15,
-  },
-  actionButton: {
-    marginBottom: 15,
-  },
-  btnContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnText: {
-    color: "#FFF",
-    fontFamily: "LatoBold",
-    fontSize: 14,
-    letterSpacing: 1,
-  },
-
-  // Modal
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-  },
-  backdropPressable: {
-    flex: 1,
-  },
-  modalCentering: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-  modalContainer: {
-    width: "100%",
-    maxWidth: 340,
-    borderRadius: 28,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 20,
-  },
-  modalGradient: {
-    paddingTop: 32,
-    paddingBottom: 8,
-    paddingHorizontal: 24,
-    position: "relative",
-  },
-  modalCloseBtn: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  modalUserSection: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
-    borderColor: colors.accentPink,
-    marginBottom: 14,
-  },
-  modalUserName: {
-    fontSize: 20,
-    fontFamily: "LatoBold",
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  modalUserEmail: {
-    fontSize: 13,
-    fontFamily: "LatoRegular",
-    color: colors.textSecondary,
-    opacity: 0.8,
-  },
-  modalDivider: {
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    marginBottom: 16,
-  },
-  modalActions: {
-    gap: 10,
-    marginBottom: 20,
-  },
-  modalBtn: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  modalBtnGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
-  },
-  modalBtnText: {
-    fontSize: 15,
-    fontFamily: "LatoBold",
-    color: colors.textPrimary,
-    marginLeft: 14,
-    flex: 1,
-  },
-  modalBtnChevron: {
-    marginLeft: "auto",
-  },
-  modalAccentLine: {
-    height: 3,
-    borderRadius: 2,
-    marginHorizontal: 40,
-    marginBottom: 16,
-  },
-});
+    // ── Secondary cards grid ──
+    gridRow: {
+      flexDirection: "row",
+      gap: 16,
+    },
+    gridItem: {
+      flex: 1,
+    },
+    gridCard: {
+      flex: 1,
+      backgroundColor: t.card,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.borderSoft,
+      padding: 20,
+      ...t.cardShadow,
+    },
+    gridIconBubble: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
+    gridTitle: {
+      fontSize: 15,
+      fontFamily: "PlusJakartaSans_600SemiBold",
+      color: t.textPrimary,
+      marginBottom: 2,
+    },
+    gridCaption: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: t.textSecondary,
+    },
+  });

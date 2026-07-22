@@ -15,7 +15,7 @@ const GeneralButton = ({
   disabled = false,
   fullWidth = false,
   size = "md",
-  colors = ["#7C3AED", "#14B8A6"],
+  colors = ["#7C3AED", "#6D28D9"],
   style,
   textStyle,
   ...rest
