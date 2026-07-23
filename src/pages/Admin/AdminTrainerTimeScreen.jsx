@@ -180,7 +180,10 @@ export default function AdminTrainerTimeScreen() {
                   {blocks.length > 0 ? (
                     <View style={styles.blocksWrap}>
                       {blocks.map((b, i) => (
-                        <View key={`${b.start}-${b.end}-${i}`} style={styles.blockPill}>
+                        <View
+                          key={`${b.start}-${b.end}-${i}`}
+                          style={styles.blockPill}
+                        >
                           <Text style={styles.blockPillText}>
                             {b.start} – {b.end}
                           </Text>
@@ -204,7 +207,7 @@ export default function AdminTrainerTimeScreen() {
                     style={styles.addBlockBtn}
                     onPress={() => openAdd(day.key)}
                   >
-                    <Text style={styles.addBlockBtnText}>+ Dodaj zauzeće</Text>
+                    <Text style={styles.addBlockBtnText}>+ Dodaj vrijeme</Text>
                   </Pressable>
 
                   <View style={styles.freeRow}>
@@ -239,7 +242,7 @@ export default function AdminTrainerTimeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Dodaj zauzeće</Text>
+            <Text style={styles.modalTitle}>Dodaj vrijeme</Text>
             <Text style={styles.modalSubtitle}>
               {WORK_DAYS.find((d) => d.key === addDay)?.label}
             </Text>
@@ -255,7 +258,10 @@ export default function AdminTrainerTimeScreen() {
                 return (
                   <Pressable
                     key={t}
-                    style={[styles.pickerChip, selected && styles.pickerChipActive]}
+                    style={[
+                      styles.pickerChip,
+                      selected && styles.pickerChipActive,
+                    ]}
                     onPress={() => {
                       setNewStart(t);
                       if (newEnd && timeToMin(newEnd) <= timeToMin(t)) {
@@ -283,7 +289,8 @@ export default function AdminTrainerTimeScreen() {
               contentContainerStyle={styles.pickerScroll}
             >
               {BLOCK_TIMES.map((t) => {
-                const disabled = !newStart || timeToMin(t) <= timeToMin(newStart);
+                const disabled =
+                  !newStart || timeToMin(t) <= timeToMin(newStart);
                 const selected = newEnd === t;
                 return (
                   <Pressable
