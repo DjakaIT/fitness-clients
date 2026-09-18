@@ -133,7 +133,8 @@ export default function AdminClientProgramsScreen() {
                       key={`${ex.exerciseId}-${idx}`}
                       style={[
                         s.exerciseRow,
-                        idx === training.exercises.length - 1 && s.exerciseRowLast,
+                        idx === training.exercises.length - 1 &&
+                          s.exerciseRowLast,
                       ]}
                     >
                       <View style={s.exerciseNum}>

@@ -9,7 +9,11 @@ export default function CategoryCard({ name, categoryKey, onPress }) {
   const styles = useThemedStyles(makeStyles);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
       {config.icon ? (
         <View style={styles.imageWrap}>
           <Image source={config.icon} style={styles.image} resizeMode="cover" />

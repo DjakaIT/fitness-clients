@@ -53,7 +53,9 @@ export default function CancelAppointmentSheet({
           <Text style={styles.title}>Otkaži termin</Text>
 
           <View style={styles.apptCard}>
-            <Text style={styles.apptDate}>{formatDateLong(appointmentDate)}</Text>
+            <Text style={styles.apptDate}>
+              {formatDateLong(appointmentDate)}
+            </Text>
             <Text style={styles.apptTime}>{time}</Text>
           </View>
 
@@ -88,7 +90,11 @@ export default function CancelAppointmentSheet({
 
             {allowed && (
               <Pressable
-                style={[styles.btn, styles.btnDanger, isCancelling && styles.btnBusy]}
+                style={[
+                  styles.btn,
+                  styles.btnDanger,
+                  isCancelling && styles.btnBusy,
+                ]}
                 onPress={onConfirm}
                 disabled={isCancelling}
               >

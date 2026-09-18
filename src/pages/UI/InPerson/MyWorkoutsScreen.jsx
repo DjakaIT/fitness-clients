@@ -109,7 +109,9 @@ export default function MyWorkoutsScreen() {
                 color={theme.accent}
                 style={styles.emptyIcon}
               />
-              <Text style={styles.emptyTitle}>Nema programa za ovaj tjedan</Text>
+              <Text style={styles.emptyTitle}>
+                Nema programa za ovaj tjedan
+              </Text>
               <Text style={styles.emptyText}>
                 Trenerica još nije poslala program.{"\n"}Provjeri opet uskoro.
               </Text>
@@ -125,7 +127,10 @@ export default function MyWorkoutsScreen() {
                 {Array.from({ length: sessionsPerWeek }, (_, i) => (
                   <Pressable
                     key={i}
-                    style={[styles.tab, activeTraining === i && styles.tabActive]}
+                    style={[
+                      styles.tab,
+                      activeTraining === i && styles.tabActive,
+                    ]}
                     onPress={() => setActiveTraining(i)}
                   >
                     <Text
@@ -165,7 +170,8 @@ export default function MyWorkoutsScreen() {
                         idx={idx}
                         video={video}
                         onNavigate={() =>
-                          video && navigation.navigate("WorkoutVideo", { video })
+                          video &&
+                          navigation.navigate("WorkoutVideo", { video })
                         }
                       />
                     );

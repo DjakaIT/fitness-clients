@@ -81,7 +81,10 @@ export default function AdminClientGeneralScreen() {
         <Pressable style={s.ticket} onPress={goToImpressions}>
           <View style={s.ticketMain}>
             {isFetching ? (
-              <ActivityIndicator color="#7C3AED" style={{ alignSelf: "flex-start" }} />
+              <ActivityIndicator
+                color="#7C3AED"
+                style={{ alignSelf: "flex-start" }}
+              />
             ) : (
               <Text style={s.ticketNumber}>{impressionCount}</Text>
             )}

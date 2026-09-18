@@ -15,7 +15,12 @@ import { AUTH } from "../styles/authTheme";
 // Fixed positions (they sit, they don't drift) with staggered jolt delays.
 const SYMBOLS = [
   { Icon: Barbell, size: 44, delay: 0, pos: { top: "8%", left: "8%" } },
-  { Icon: PersonSimpleRun, size: 40, delay: 250, pos: { top: "34%", left: "5%" } },
+  {
+    Icon: PersonSimpleRun,
+    size: 40,
+    delay: 250,
+    pos: { top: "34%", left: "5%" },
+  },
   { Icon: Medal, size: 36, delay: 450, pos: { bottom: "13%", right: "9%" } },
   { Icon: Heartbeat, size: 32, delay: 650, pos: { top: "15%", right: "10%" } },
   { Icon: YinYang, size: 30, delay: 850, pos: { bottom: "20%", left: "11%" } },

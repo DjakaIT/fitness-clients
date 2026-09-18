@@ -39,9 +39,18 @@ export default function WelcomeScreen() {
     ).start();
   }, [enter, float]);
 
-  const enterScale = enter.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
-  const enterY = enter.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
-  const floatY = float.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
+  const enterScale = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.94, 1],
+  });
+  const enterY = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [16, 0],
+  });
+  const floatY = float.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -10],
+  });
 
   return (
     <View style={styles.root}>
@@ -56,7 +65,10 @@ export default function WelcomeScreen() {
               }}
             >
               <Animated.View
-                style={[styles.logoCard, { transform: [{ translateY: floatY }] }]}
+                style={[
+                  styles.logoCard,
+                  { transform: [{ translateY: floatY }] },
+                ]}
               >
                 <Image
                   source={require("../../assets/images/logo.jpeg")}

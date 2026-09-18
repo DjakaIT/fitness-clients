@@ -40,7 +40,10 @@ export default function JoltIcon({
   }, [v, delay, interval]);
 
   const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.3] });
-  const rotate = v.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "9deg"] });
+  const rotate = v.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "9deg"],
+  });
 
   return (
     <Animated.View

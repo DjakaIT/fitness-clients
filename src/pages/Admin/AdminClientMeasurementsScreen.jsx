@@ -152,7 +152,9 @@ export default function AdminClientMeasurementsScreen() {
             {/* History */}
             {history.length > 0 && (
               <>
-                <Text style={[s.sectionLabel, { marginTop: 22 }]}>POVIJEST</Text>
+                <Text style={[s.sectionLabel, { marginTop: 22 }]}>
+                  POVIJEST
+                </Text>
                 {history.map((entry) => (
                   <View key={entry.id} style={s.historyRow}>
                     <Text style={s.historyDate}>

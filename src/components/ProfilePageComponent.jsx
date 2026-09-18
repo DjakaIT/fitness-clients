@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, Pressable, Modal } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Pressable,
+  Modal,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -47,7 +54,11 @@ export default function ProfilePageComponent() {
     setVisible(true);
     backdropOpacity.value = withTiming(1, { duration: 250 });
     modalOpacity.value = withTiming(1, { duration: 250 });
-    modalScale.value = withSpring(1, { damping: 18, stiffness: 200, mass: 0.8 });
+    modalScale.value = withSpring(1, {
+      damping: 18,
+      stiffness: 200,
+      mass: 0.8,
+    });
     modalTranslateY.value = withSpring(0, {
       damping: 18,
       stiffness: 200,
@@ -124,7 +135,9 @@ export default function ProfilePageComponent() {
                 textStyle={{ fontSize: 30 }}
                 styles={styles}
               />
-              <Text style={styles.userName}>{user?.displayName || "Korisnica"}</Text>
+              <Text style={styles.userName}>
+                {user?.displayName || "Korisnica"}
+              </Text>
               <Text style={styles.userEmail}>{user?.email || ""}</Text>
             </View>
 

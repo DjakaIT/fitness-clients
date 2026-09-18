@@ -28,7 +28,11 @@ const ImpressionsBox = ({ value, onChangeText }) => {
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: inputBg, borderColor: inputBorder, color: inputText },
+          {
+            backgroundColor: inputBg,
+            borderColor: inputBorder,
+            color: inputText,
+          },
         ]}
         multiline
         placeholder="U proteklom tjednu sam..."
