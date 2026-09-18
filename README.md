@@ -89,6 +89,23 @@ Cancelling sets `status: "cancelled"` rather than deleting, so the slot's
 history survives and the document id is not burned — a released slot can be
 claimed again by anyone.
 
+### One-time migration
+
+Appointments created before the slot-keyed scheme have random document ids.
+They are still readable and still cancellable, but a slot held by such a
+document can be booked a second time, because the new write targets
+`"<date>_<time>"` and would not collide with it.
+
+Bookings only ever cover the upcoming week, so the cheapest fix is to deploy
+between weeks, or to clear the old documents once:
+
+```js
+// Firebase console → Firestore → appointments
+// Delete every document whose id is not "<YYYY-MM-DD>_<HH:MM>".
+```
+
+After that, every appointment is slot-keyed and the collision guarantee holds.
+
 ## Security model
 
 There is exactly one privileged role: the trainer. Everything else is a client
