@@ -112,6 +112,26 @@ export const radius = {
   pill: 999,
 };
 
+/**
+ * Type scale.
+ *
+ * Tracking is size-specific on purpose: letters read too far apart as they grow,
+ * so display sizes take negative tracking, body sits near zero, and small
+ * all-caps labels need positive tracking to stay legible. A single global
+ * letter-spacing value is always wrong somewhere. Leading moves the opposite
+ * way — tight on large text, generous on body copy.
+ */
+export const type = {
+  display: { fontSize: 32, lineHeight: 36, letterSpacing: -0.8 },
+  title: { fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
+  heading: { fontSize: 19, lineHeight: 24, letterSpacing: -0.3 },
+  body: { fontSize: 15, lineHeight: 22, letterSpacing: 0 },
+  callout: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.1 },
+  /** Small all-caps section labels — the one place tracking opens up. */
+  overline: { fontSize: 11, lineHeight: 14, letterSpacing: 1.2 },
+};
+
 // 8pt grid
 export const space = {
   xs: 8,

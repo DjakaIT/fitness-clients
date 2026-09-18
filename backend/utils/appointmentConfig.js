@@ -1,3 +1,13 @@
+/**
+ * Calendar + slot maths for the booking flow.
+ *
+ * Everything here is a pure function of its arguments (the clock is injectable
+ * via a `now` parameter) so the rules can be unit-tested without freezing time.
+ * Every size, boundary and policy number comes from BOOKING_POLICY — see
+ * backend/config/tenant.js.
+ */
+import { BOOKING_POLICY } from "../config/tenant";
+
 // ─── Display maps ─────────────────────────────────────────────────────────────
 const DAYS_LONG = [
   "Nedjelja",
@@ -23,72 +33,106 @@ const MONTHS_HR = [
   "pro",
 ];
 
-export const TIMES = Array.from(
-  { length: 23 },
-  (_, i) =>
-    `${String(Math.floor(i / 2) + 8).padStart(2, "0")}:${i % 2 === 0 ? "00" : "30"}`,
-);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{1,2}:\d{2}$/;
 
-function parseLocal(dateStr) {
+export function timeToMinutes(time) {
+  if (typeof time !== "string" || !TIME_RE.test(time)) return NaN;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+export function minutesToTime(totalMinutes) {
+  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+  const minutes = String(totalMinutes % 60).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * "YYYY-MM-DD" → local midnight Date, or null when the string is not a real
+ * calendar date. Returning null (rather than an Invalid Date) is what lets the
+ * formatters below degrade to "" instead of rendering "undefined, NaN.".
+ */
+export function parseLocalDate(dateStr) {
+  if (typeof dateStr !== "string" || !DATE_RE.test(dateStr)) return null;
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  const date = new Date(y, m - 1, d);
+  if (
+    date.getFullYear() !== y ||
+    date.getMonth() !== m - 1 ||
+    date.getDate() !== d
+  ) {
+    return null;
+  }
+  return date;
+}
+
+/** "YYYY-MM-DD" + "HH:MM" → the local Date the session starts, or null. */
+export function parseSlotDateTime(dateStr, time) {
+  const date = parseLocalDate(dateStr);
+  const minutes = timeToMinutes(time);
+  if (!date || Number.isNaN(minutes)) return null;
+  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return date;
 }
 
 export function formatDateLong(dateStr) {
-  const d = parseLocal(dateStr);
+  const d = parseLocalDate(dateStr);
+  if (!d) return "";
   return `${DAYS_LONG[d.getDay()]}, ${d.getDate()}. ${MONTHS_HR[d.getMonth()]}.`;
 }
 
 export function formatDateShort(dateStr) {
-  const d = parseLocal(dateStr);
+  const d = parseLocalDate(dateStr);
+  if (!d) return "";
   return `${DAYS_LONG[d.getDay()].slice(0, 3)}, ${d.getDate()}. ${MONTHS_HR[d.getMonth()]}.`;
 }
 
 export function toLocalDateString(date = new Date()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
-export function getBookableDates() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dow = today.getDay();
+// ─── Time grids ───────────────────────────────────────────────────────────────
 
-  const daysToSat = dow === 6 ? 0 : 6 - dow;
-  const thisSat = new Date(today);
-  thisSat.setDate(today.getDate() + daysToSat);
-
-  const maxDate = new Date(thisSat);
-  if (dow === 6 || dow === 0) maxDate.setDate(thisSat.getDate() + 7);
-
-  const dates = [];
-  const cursor = new Date(today);
-  while (cursor <= maxDate) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) {
-      dates.push(toLocalDateString(cursor));
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
+function buildGrid(startTime, endTime, step = BOOKING_POLICY.slotGridMinutes) {
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  const grid = [];
+  for (let t = start; t <= end; t += step) grid.push(minutesToTime(t));
+  return grid;
 }
 
-export function canCancel(appointmentDate, time) {
-  const [y, m, d] = appointmentDate.split("-").map(Number);
-  const [h, min] = time.split(":").map(Number);
-  const slot = new Date(y, m - 1, d, h, min, 0);
-  const cutoff = new Date(slot.getTime() - 24 * 60 * 60 * 1000);
-  return Date.now() < cutoff.getTime();
-}
+export const CLIENT_SESSION_DURATION_MINUTES = BOOKING_POLICY.sessionMinutes;
+export const CLIENT_DAY_START = BOOKING_POLICY.dayStart;
+export const CLIENT_DAY_END = BOOKING_POLICY.dayEnd;
 
-// Hours from now until the appointment (negative if it already started).
-export function hoursUntilAppointment(appointmentDate, time) {
-  const [y, m, d] = appointmentDate.split("-").map(Number);
-  const [h, min] = time.split(":").map(Number);
-  const slot = new Date(y, m - 1, d, h, min, 0);
-  return (slot.getTime() - Date.now()) / (1000 * 60 * 60);
+/** Every start time at which a full session still fits inside the client day. */
+export const CLIENT_APPOINTMENT_START_TIMES = buildGrid(
+  BOOKING_POLICY.dayStart,
+  BOOKING_POLICY.dayEnd,
+).filter(
+  (time) =>
+    timeToMinutes(time) + CLIENT_SESSION_DURATION_MINUTES <=
+    timeToMinutes(BOOKING_POLICY.dayEnd),
+);
+
+/** Times the trainer can pick when marking herself busy (wider than the client day). */
+export const BLOCK_TIMES = buildGrid(
+  BOOKING_POLICY.blockDayStart,
+  BOOKING_POLICY.blockDayEnd,
+);
+
+/** Legacy: a bare start string used to mean "a 4h main-job shift from here". */
+export const MAIN_JOB_DURATION_MINUTES = 4 * 60;
+
+export function getShiftEndTime(workStart) {
+  const start = timeToMinutes(workStart);
+  if (Number.isNaN(start)) return null;
+  return minutesToTime(start + MAIN_JOB_DURATION_MINUTES);
 }
 
 export const WORK_DAYS = [
@@ -99,62 +143,61 @@ export const WORK_DAYS = [
   { key: "friday", label: "Petak", shortLabel: "Pet" },
 ];
 
-export const MAIN_JOB_START_TIMES = TIMES.filter((time) => time <= "17:00");
+const DOW_KEY_MAP = {
+  1: "monday",
+  2: "tuesday",
+  3: "wednesday",
+  4: "thursday",
+  5: "friday",
+};
 
-export const MAIN_JOB_DURATION_MINUTES = 4 * 60;
-export const CLIENT_SESSION_DURATION_MINUTES = 60;
-export const TRAVEL_BUFFER_MINUTES = 30;
-export const CLIENT_DAY_START = "08:00";
-export const CLIENT_DAY_END = "20:00";
+// ─── Busy blocks → free client slots ─────────────────────────────────────────
 
-function timeToMinutes(time) {
-  const parts = time.split(":").map(Number);
-  return parts[0] * 60 + parts[1];
-}
-
-function minutesToTime(totalMinutes) {
-  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-  const minutes = String(totalMinutes % 60).padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
-
-export const CLIENT_APPOINTMENT_START_TIMES = TIMES.filter((time) => {
-  const startMinutes = timeToMinutes(time);
-  const endMinutes = startMinutes + CLIENT_SESSION_DURATION_MINUTES;
-  return (
-    startMinutes >= timeToMinutes(CLIENT_DAY_START) &&
-    endMinutes <= timeToMinutes(CLIENT_DAY_END)
-  );
-});
-
-export function getShiftEndTime(workStart) {
-  if (!workStart) return null;
-  return minutesToTime(timeToMinutes(workStart) + MAIN_JOB_DURATION_MINUTES);
-}
-
-// Times available when defining a busy block (06:00–22:00, 30-min grid).
-export const BLOCK_TIMES = Array.from({ length: (22 - 6) * 2 + 1 }, (_, i) =>
-  minutesToTime(timeToMinutes("06:00") + i * 30),
-);
-
-// A day's schedule value may be: null/undefined (fully free), a legacy single
-// main-job start string (→ one 4h block), or an array of { start, end } blocks.
+/**
+ * A day's schedule value may be null/undefined (fully free), a legacy single
+ * main-job start string (→ one 4h block), or an array of { start, end } blocks.
+ * Invalid and zero-length blocks are dropped, and overlapping/touching blocks
+ * are merged so downstream maths never sees the same minute twice.
+ */
 export function normalizeDayBlocks(value) {
-  if (!value) return [];
+  let blocks = [];
+
   if (Array.isArray(value)) {
-    return value
-      .filter((b) => b && b.start && b.end)
-      .map((b) => ({ start: b.start, end: b.end }))
-      .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+    blocks = value
+      .filter(
+        (b) => b && typeof b.start === "string" && typeof b.end === "string",
+      )
+      .map((b) => [timeToMinutes(b.start), timeToMinutes(b.end)])
+      .filter(([s, e]) => !Number.isNaN(s) && !Number.isNaN(e) && e > s);
+  } else if (typeof value === "string" && value) {
+    const start = timeToMinutes(value);
+    if (!Number.isNaN(start)) {
+      blocks = [[start, start + MAIN_JOB_DURATION_MINUTES]];
+    }
   }
-  if (typeof value === "string") {
-    return [{ start: value, end: getShiftEndTime(value) }];
+
+  blocks.sort((a, b) => a[0] - b[0]);
+
+  const merged = [];
+  for (const [start, end] of blocks) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) {
+      last[1] = Math.max(last[1], end);
+    } else {
+      merged.push([start, end]);
+    }
   }
-  return [];
+
+  return merged.map(([start, end]) => ({
+    start: minutesToTime(start),
+    end: minutesToTime(end),
+  }));
 }
 
-// Free 60-min client slots are those that don't overlap any busy block, within
-// the client day. Free time runs right up to each block (no travel buffer).
+/**
+ * Start times whose full session fits in a gap between busy blocks. Free time
+ * runs right up to each block — there is deliberately no travel buffer.
+ */
 export function getFreeClientTimes(value) {
   const busy = normalizeDayBlocks(value).map((b) => [
     timeToMinutes(b.start),
@@ -168,7 +211,7 @@ export function getFreeClientTimes(value) {
   });
 }
 
-// Free time as human-readable windows, e.g. "08:00 - 12:00, 16:00 - 18:00".
+/** Free time as human-readable windows, e.g. "08:00 - 12:00, 16:00 - 18:00". */
 export function getFreeClientTimeText(value) {
   const free = getFreeClientTimes(value);
   if (free.length === 0) return "Nema slobodnih termina.";
@@ -185,7 +228,10 @@ export function getFreeClientTimeText(value) {
     );
 
   for (let i = 1; i < free.length; i += 1) {
-    if (timeToMinutes(free[i]) - timeToMinutes(previous) !== 30) {
+    if (
+      timeToMinutes(free[i]) - timeToMinutes(previous) !==
+      BOOKING_POLICY.slotGridMinutes
+    ) {
       closeWindow();
       windowStart = free[i];
     }
@@ -195,62 +241,77 @@ export function getFreeClientTimeText(value) {
   return windows.join(", ");
 }
 
-const DOW_KEY_MAP = {
-  1: "monday",
-  2: "tuesday",
-  3: "wednesday",
-  4: "thursday",
-  5: "friday",
-};
-
+/** The raw schedule value for the weekday `dateStr` falls on (null on weekends). */
 export function getTrainerWorkStartForDate(schedule, dateStr) {
   if (!schedule) return null;
-  const key = DOW_KEY_MAP[parseLocal(dateStr).getDay()];
+  const date = parseLocalDate(dateStr);
+  if (!date) return null;
+  const key = DOW_KEY_MAP[date.getDay()];
   return key ? (schedule[key] ?? null) : null;
 }
 
-export function getBookingWindow() {
-  const today = new Date();
+// ─── Cancellation ────────────────────────────────────────────────────────────
+
+/** Hours from `now` until the session starts (negative once it has started). */
+export function hoursUntilAppointment(appointmentDate, time, now = Date.now()) {
+  const slot = parseSlotDateTime(appointmentDate, time);
+  if (!slot) return NaN;
+  return (slot.getTime() - now) / (1000 * 60 * 60);
+}
+
+/** A client may cancel until BOOKING_POLICY.cancelCutoffHours before the start. */
+export function canCancel(appointmentDate, time, now = Date.now()) {
+  const hours = hoursUntilAppointment(appointmentDate, time, now);
+  if (Number.isNaN(hours)) return false;
+  return hours >= BOOKING_POLICY.cancelCutoffHours;
+}
+
+// ─── Week windows ────────────────────────────────────────────────────────────
+
+/** Local midnight of the Monday of `date`'s week (weeks run Mon–Sun). */
+function mondayOf(date) {
+  const dow = date.getDay();
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + (dow === 0 ? -6 : 1 - dow));
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+/**
+ * The week clients are currently booking: always *next* week, Mon–Fri, so the
+ * trainer always has the current week to plan against.
+ */
+export function getBookingWindow(now = new Date()) {
+  const today = new Date(now);
   today.setHours(0, 0, 0, 0);
-  const dow = today.getDay();
 
-  const daysToThisMonday = dow === 0 ? -6 : 1 - dow;
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() + daysToThisMonday);
+  const nextMonday = mondayOf(today);
+  nextMonday.setDate(nextMonday.getDate() + 7);
 
-  const nextMonday = new Date(thisMonday);
-  nextMonday.setDate(thisMonday.getDate() + 7);
-
-  const bookableDates = Array.from({ length: 5 }, (_, i) => {
+  const bookableDates = BOOKING_POLICY.workDayNumbers.map((_, i) => {
     const d = new Date(nextMonday);
     d.setDate(nextMonday.getDate() + i);
     return toLocalDateString(d);
   });
 
   return {
-    isOpen: true,
     bookableDates,
     weekStart: bookableDates[0],
-    weekEnd: bookableDates[4],
-    nextSaturday: "",
+    weekEnd: bookableDates[bookableDates.length - 1],
   };
 }
 
-// ─── Week utilities (workout builder / my workouts) ──────────────────────────
-
-export function getWeekMondayFromOffset(offsetWeeks = 0) {
-  const today = new Date();
-  const dow = today.getDay();
-  const daysToMon = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + daysToMon + offsetWeeks * 7);
-  monday.setHours(0, 0, 0, 0);
+/** Monday of the week `offsetWeeks` away from the current one, as "YYYY-MM-DD". */
+export function getWeekMondayFromOffset(offsetWeeks = 0, now = new Date()) {
+  const monday = mondayOf(new Date(now));
+  monday.setDate(monday.getDate() + offsetWeeks * 7);
   return toLocalDateString(monday);
 }
 
 export function formatWeekLabel(mondayStr) {
-  const mon = parseLocal(mondayStr);
-  const fri = new Date(mon);
-  fri.setDate(mon.getDate() + 4);
-  return `${mon.getDate()}. ${MONTHS_HR[mon.getMonth()]} – ${fri.getDate()}. ${MONTHS_HR[fri.getMonth()]}`;
+  const mon = parseLocalDate(mondayStr);
+  if (!mon) return "";
+  const last = new Date(mon);
+  last.setDate(mon.getDate() + BOOKING_POLICY.workDayNumbers.length - 1);
+  return `${mon.getDate()}. ${MONTHS_HR[mon.getMonth()]} – ${last.getDate()}. ${MONTHS_HR[last.getMonth()]}`;
 }

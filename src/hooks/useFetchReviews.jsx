@@ -7,7 +7,11 @@ export default function useFetchReviews(userId) {
   const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setReviews([]);
+      setIsFetching(false);
+      return;
+    }
 
     const fetchReview = async () => {
       try {

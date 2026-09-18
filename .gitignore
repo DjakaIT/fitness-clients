@@ -53,5 +53,12 @@ app.json
 # Secrets & credentials
 .env
 .env.*
-# Firebase security rules — managed in the Firebase console, never deployed from repo
-firestore.rules
+!.env.example
+
+# NOTE: firestore.rules is deliberately NOT ignored. It contains no secrets —
+# it is the access-control policy, and it is the only thing standing between a
+# client and everyone else's data. Keeping it in git is what makes a change to
+# it reviewable. Deploy with: firebase deploy --only firestore:rules
+
+# Coverage output
+coverage/

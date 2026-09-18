@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Play } from "phosphor-react-native";
 import { makeStyles } from "../styles/Components/StylesVideoCard";
 import { useTheme, useThemedStyles } from "../context/ThemeContext";
 
@@ -32,7 +32,7 @@ export default function VideoCard({ title, image, onPress, imageScale }) {
               pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
             ]}
           >
-            <Ionicons name="play" size={18} color={theme.onAccent} />
+            <Play size={18} weight="fill" color={theme.onAccent} />
             <Text style={styles.buttonText}>Pogledaj</Text>
           </Pressable>
         </View>

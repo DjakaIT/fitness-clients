@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   GoogleSignin,
   statusCodes,
@@ -10,42 +10,51 @@ GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 });
 
+/** Failures the user can act on, separated from the ones they cannot. */
+const MESSAGES = {
+  [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]:
+    "Google Play usluge nisu dostupne ili su zastarjele.",
+  [statusCodes.IN_PROGRESS]: "Prijava je već u tijeku.",
+};
+
+const GENERIC_MESSAGE = "Prijava nije uspjela. Provjeri vezu i pokušaj ponovo.";
+
 export function useGoogleAuth() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const signIn = async () => {
+  const signIn = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
       const response = await GoogleSignin.signIn();
-
       const idToken = response?.data?.idToken;
+      if (!idToken) throw new Error("No idToken received from Google Sign-In");
 
-      if (!idToken) {
-        throw new Error("No idToken received from Google Sign-In");
+      await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+      return { success: true };
+    } catch (err) {
+      // Cancelling is a choice, not a failure — it must not raise an error.
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        return { success: false, cancelled: true };
       }
 
-      const credential = GoogleAuthProvider.credential(idToken);
-
-      await signInWithCredential(auth, credential);
-    } catch (error) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("User cancelled the sign-in");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log("Sign-in already in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.error("Google Play Services not available");
-      } else {
-        console.error("Google Sign-In Error:", error);
-      }
+      // Previously every failure was only logged, so a user whose sign-in
+      // broke saw the button simply stop spinning with no explanation.
+      console.error("Google Sign-In error:", err);
+      const message = MESSAGES[err.code] ?? GENERIC_MESSAGE;
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  return { signIn, loading };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { signIn, loading, error, clearError };
 }

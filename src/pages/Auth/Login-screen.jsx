@@ -15,7 +15,7 @@ import { styles } from "../../styles/Auth/StylesLoginScreen";
 import { AUTH } from "../../styles/authTheme";
 
 export default function LoginScreen() {
-  const { signIn, loading } = useGoogleAuth();
+  const { signIn, loading, error } = useGoogleAuth();
 
   return (
     <View style={styles.root}>
@@ -63,6 +63,12 @@ export default function LoginScreen() {
                   </>
                 )}
               </TouchableOpacity>
+
+              {!!error && (
+                <Text style={styles.errorText} accessibilityRole="alert">
+                  {error}
+                </Text>
+              )}
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>

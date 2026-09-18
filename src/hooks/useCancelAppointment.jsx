@@ -1,51 +1,52 @@
-import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useCallback, useState } from "react";
+import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
-import { canCancel } from "../../backend/utils/appointmentConfig";
+import {
+  cancelAppointmentInTransaction,
+  NotOwnerError,
+  TooLateToCancelError,
+} from "../../backend/services/appointmentService";
 
 export default function useCancelAppointment() {
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const cancelAppointment = async (
-    appointmentId,
-    appointmentDate,
-    time,
-    isAdmin = false,
-  ) => {
-    if (!isAdmin && !canCancel(appointmentDate, time)) {
-      return { success: false, tooLate: true };
-    }
-    setIsCancelling(true);
-    try {
-      await updateDoc(doc(db, "appointments", appointmentId), {
-        status: "cancelled",
-      });
-      return { success: true };
-    } catch (error) {
-      console.error("Error cancelling appointment:", error);
-      return { success: false };
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+  /**
+   * Releases one appointment. The cutoff and the ownership check are re-run
+   * inside the transaction against the stored document, so a stale screen (or a
+   * tampered client) cannot cancel past the deadline or cancel someone else's
+   * slot.
+   */
+  const cancelAppointment = useCallback(
+    async (appointmentId, { userId, isAdmin = false } = {}) => {
+      if (!appointmentId) return { success: false };
 
-  const cancelMultiple = async (appointmentIds) => {
-    if (!appointmentIds.length) return { success: true };
-    setIsCancelling(true);
-    try {
-      await Promise.all(
-        appointmentIds.map((id) =>
-          updateDoc(doc(db, "appointments", id), { status: "cancelled" }),
-        ),
-      );
-      return { success: true };
-    } catch (error) {
-      console.error("Error cancelling multiple appointments:", error);
-      return { success: false };
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+      setIsCancelling(true);
+      try {
+        await runTransaction(db, (tx) =>
+          cancelAppointmentInTransaction({
+            tx,
+            ref: doc(db, "appointments", appointmentId),
+            userId,
+            isAdmin,
+            timestamp: serverTimestamp,
+          }),
+        );
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TooLateToCancelError) {
+          return { success: false, tooLate: true };
+        }
+        if (error instanceof NotOwnerError) {
+          return { success: false, notOwner: true };
+        }
+        console.error("Error cancelling appointment:", error);
+        return { success: false };
+      } finally {
+        setIsCancelling(false);
+      }
+    },
+    [],
+  );
 
-  return { cancelAppointment, cancelMultiple, isCancelling };
+  return { cancelAppointment, isCancelling };
 }

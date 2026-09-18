@@ -21,7 +21,7 @@ import { formatDateLong } from "../../../../backend/utils/appointmentConfig";
 import { makeStyles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
 
 export default function InPersonHomeScreen() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -34,14 +34,18 @@ export default function InPersonHomeScreen() {
 
   const handleConfirmCancel = async () => {
     if (!cancelTarget) return;
-    const result = await cancelAppointment(
-      cancelTarget.id,
-      cancelTarget.appointmentDate,
-      cancelTarget.time,
-    );
+    const result = await cancelAppointment(cancelTarget.id, {
+      userId: user?.uid,
+      isAdmin,
+    });
     if (result.success) {
       setCancelTarget(null);
-    } else if (!result.tooLate) {
+    } else if (result.tooLate) {
+      Alert.alert(
+        "Prekasno za otkazivanje",
+        "Termin se može otkazati najkasnije 24 sata prije početka.",
+      );
+    } else {
       Alert.alert("Greška", "Otkazivanje nije uspjelo. Pokušaj ponovo.");
     }
   };

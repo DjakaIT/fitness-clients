@@ -1,13 +1,13 @@
 import React from "react";
-import { Pressable, Text, Animated, Platform } from "react-native";
+import { Pressable, Text, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import useReducedMotion from "../hooks/useReducedMotion";
+import { PRESS_SCALE, SPRINGS } from "../styles/motion";
 import {
   styles,
   sizeStyles,
   textSizes,
 } from "../styles/Components/StylesGeneralButton";
-
-const useNativeDriver = Platform.OS !== "web";
 
 const GeneralButton = ({
   children,
@@ -18,24 +18,17 @@ const GeneralButton = ({
   colors = ["#7C3AED", "#6D28D9"],
   style,
   textStyle,
+  accessibilityLabel,
   ...rest
 }) => {
   const animatedScale = React.useRef(new Animated.Value(1)).current;
+  const reducedMotion = useReducedMotion();
 
-  const handlePressIn = () => {
-    Animated.spring(animatedScale, {
-      toValue: 0.96,
-      useNativeDriver,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(animatedScale, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver,
-    }).start();
+  // Critically damped in both directions: pressing a button is not a throw, so
+  // it should settle rather than wobble back.
+  const springTo = (toValue) => {
+    if (reducedMotion) return;
+    Animated.spring(animatedScale, { toValue, ...SPRINGS.press }).start();
   };
 
   return (
@@ -49,11 +42,16 @@ const GeneralButton = ({
     >
       <Pressable
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => springTo(PRESS_SCALE)}
+        onPressOut={() => springTo(1)}
         disabled={disabled}
-        // --- FIX IS HERE: REMOVED sizeStyles[size] ---
-        style={({ pressed }) => [styles.pressable, disabled && styles.disabled]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        accessibilityLabel={
+          accessibilityLabel ??
+          (typeof children === "string" ? children : undefined)
+        }
+        style={[styles.pressable, disabled && styles.disabled]}
         {...rest}
       >
         <LinearGradient

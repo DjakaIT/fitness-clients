@@ -12,10 +12,17 @@ export default function usePendingUsers() {
       where("role", "==", "user"),
       where("status", "==", "pending"),
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPendingUsers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setPendingUsers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error loading pending users:", error);
+        setLoading(false);
+      },
+    );
     return unsubscribe;
   }, []);
 

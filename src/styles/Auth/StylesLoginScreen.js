@@ -67,6 +67,13 @@ export const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
+  errorText: {
+    marginTop: 14,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    color: "#FCA5A5",
+  },
   googleIcon: { width: 22, height: 22, marginRight: 12 },
   googleButtonText: {
     fontFamily: "Inter_600SemiBold",

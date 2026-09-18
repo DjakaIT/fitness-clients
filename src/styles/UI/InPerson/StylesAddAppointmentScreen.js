@@ -228,6 +228,21 @@ export const makeStyles = (t) =>
     },
 
     // ── Submit ──
+    errorBanner: {
+      marginTop: 20,
+      backgroundColor: t.dangerSoft,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: t.danger,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    errorBannerText: {
+      fontSize: 14,
+      lineHeight: 20,
+      fontFamily: "Inter_500Medium",
+      color: t.danger,
+    },
     submitBtn: {
       backgroundColor: t.accent,
       borderRadius: 20,

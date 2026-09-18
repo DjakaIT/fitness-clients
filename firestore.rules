@@ -1,0 +1,180 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Marta Fitness — Firestore security rules
+//
+// Model: exactly one privileged role (the trainer) and many clients. A client
+// may only ever see and touch their own data; the trainer sees everything for
+// her own clients. Nothing here trusts a field the client controls — role and
+// status are writable by the trainer only, so a client cannot self-approve or
+// promote themselves by editing their own user document.
+//
+// RE-BRANDING FOR ANOTHER TRAINER: change trainerEmails() below and redeploy.
+// Keep it in sync with EXPO_PUBLIC_ADMIN_EMAIL (backend/config/tenant.js) —
+// that one only drives the UI, this one is what is actually enforced.
+//
+// Deploy:  firebase deploy --only firestore:rules
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Identity helpers ───────────────────────────────────────────────────
+
+    function trainerEmails() {
+      return ['danielrajic145@gmail.com'];
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // Verified e-mail only: an unverified address could otherwise be spoofed by
+    // a provider that does not check ownership.
+    function isTrainer() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in trainerEmails();
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // A client only gets past the waiting room once the trainer approves them.
+    function isActiveClient() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function unchanged(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] == resource.data[field];
+    }
+
+    // ─── Users ──────────────────────────────────────────────────────────────
+    // A client reads and updates only their own profile, and may never change
+    // the three fields that decide what they are allowed to do.
+
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isTrainer();
+      allow list: if isTrainer();
+
+      // Self-registration: the account is created as a pending client, full
+      // stop. The trainer's own account is created as an approved admin.
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && (
+          isTrainer()
+            ? (request.resource.data.role == 'admin'
+               && request.resource.data.status == 'active')
+            : (request.resource.data.role == 'user'
+               && request.resource.data.status == 'pending')
+        );
+
+      // Clients may refresh their own profile and pick a training type, but
+      // role / status / uid / email are frozen for them.
+      allow update: if isTrainer()
+        || (isOwner(uid)
+            && unchanged('role')
+            && unchanged('status')
+            && unchanged('uid')
+            && unchanged('email')
+            && (!('trainingType' in request.resource.data)
+                || request.resource.data.trainingType == null
+                || request.resource.data.trainingType in ['online', 'in_person']));
+
+      allow delete: if isTrainer();
+    }
+
+    // ─── Appointments ───────────────────────────────────────────────────────
+    // One document per bookable slot, with the document id pinned to
+    // "<date>_<time>". That is what makes a double-booking impossible: two
+    // clients racing for the same minute race for the same document, and only
+    // one create can win.
+
+    match /appointments/{slotId} {
+
+      function slotIdMatchesData() {
+        return slotId == request.resource.data.appointmentDate + '_' + request.resource.data.time;
+      }
+
+      function wellFormedSlot() {
+        return request.resource.data.appointmentDate is string
+          && request.resource.data.appointmentDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.time is string
+          && request.resource.data.time.matches('^[0-9]{2}:[0-9]{2}$')
+          && request.resource.data.status in ['active', 'cancelled']
+          && slotIdMatchesData();
+      }
+
+      // Clients need the whole week's slots to know what is still free. The
+      // document deliberately carries no name or photo, so this exposes nothing
+      // beyond an opaque uid.
+      allow read: if isTrainer() || isActiveClient();
+
+      allow create: if wellFormedSlot()
+        && request.resource.data.status == 'active'
+        && (isTrainer()
+            || (isActiveClient() && isOwner(request.resource.data.userId)));
+
+      allow update: if isTrainer()
+        // Client releases their own slot.
+        || (isOwner(resource.data.userId)
+            && request.resource.data.status == 'cancelled'
+            && unchanged('userId')
+            && unchanged('appointmentDate')
+            && unchanged('time'))
+        // Client claims a slot somebody else released.
+        || (isActiveClient()
+            && resource.data.status == 'cancelled'
+            && wellFormedSlot()
+            && request.resource.data.status == 'active'
+            && isOwner(request.resource.data.userId));
+
+      allow delete: if isTrainer();
+    }
+
+    // ─── Weekly reviews (impressions) ───────────────────────────────────────
+    // Private reflections. Previously any signed-in user could read every
+    // client's entries.
+
+    match /weekly_review/{docId} {
+      allow read: if isTrainer() || isOwner(resource.data.userId);
+      allow create: if isActiveClient()
+        && isOwner(request.resource.data.userId)
+        && request.resource.data.userId is string;
+      allow update, delete: if isTrainer();
+    }
+
+    // ─── Measurements ───────────────────────────────────────────────────────
+    // Body data — read by its owner and the trainer, written by the trainer.
+
+    match /measurements/{docId} {
+      allow read: if isTrainer() || isOwner(resource.data.userId);
+      allow write: if isTrainer();
+    }
+
+    // ─── Workout programs ───────────────────────────────────────────────────
+
+    match /workouts/{docId} {
+      allow read: if isTrainer() || isOwner(resource.data.userId);
+      allow write: if isTrainer();
+    }
+
+    // ─── Trainer configuration (schedule, etc.) ─────────────────────────────
+    // Everyone signed in reads it to see availability; only the trainer writes.
+
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer();
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

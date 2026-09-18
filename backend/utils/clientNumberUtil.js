@@ -1,16 +1,20 @@
+/**
+ * Croatian noun agreement for "klijentica".
+ *
+ * The rule is decided by the last two digits: 2, 3 and 4 take the paucal
+ * ("klijentice"), everything else — including the 12/13/14 exception and 1
+ * itself — takes "klijentica".
+ */
 const formatClientNumber = (number) => {
-  const numStr = number.toString();
+  const n = Number(number);
+  if (!Number.isFinite(n)) return "0 klijentica";
 
-  if (
-    !numStr.endsWith("12") &&
-    !numStr.endsWith("13") &&
-    !numStr.endsWith("14") &&
-    (numStr.endsWith("2") || numStr.endsWith("3") || numStr.endsWith("4"))
-  ) {
-    return `${number} klijentice`;
-  } else {
-    return `${number} klijentica`;
-  }
+  const abs = Math.abs(Math.trunc(n));
+  const lastTwo = abs % 100;
+  const last = abs % 10;
+
+  const isPaucal = last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14);
+  return `${Math.trunc(n)} ${isPaucal ? "klijentice" : "klijentica"}`;
 };
 
 export default formatClientNumber;

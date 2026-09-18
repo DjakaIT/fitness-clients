@@ -1,41 +1,54 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import { CaretLeft } from "phosphor-react-native";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
-import useAddAppointment from "../../../hooks/useAddAppointment";
-import useCancelAppointment from "../../../hooks/useCancelAppointment";
+import useSyncAppointments from "../../../hooks/useSyncAppointments";
 import useTrainerSchedule from "../../../hooks/useTrainerSchedule";
 import useBookedSlots from "../../../hooks/useBookedSlots";
 import {
   CLIENT_APPOINTMENT_START_TIMES,
   getBookingWindow,
-  getTrainerWorkStartForDate,
-  getFreeClientTimes,
   formatDateShort,
   formatDateLong,
 } from "../../../../backend/utils/appointmentConfig";
+import {
+  DATE_STATUS,
+  SLOT_STATUS,
+  getDateStatus,
+  getSlotStatus,
+  validateSelection,
+} from "../../../../backend/utils/bookingRules";
+import { BOOKING_POLICY } from "../../../../backend/config/tenant";
+import PressableScale from "../../../components/PressableScale";
 import { makeStyles } from "../../../styles/UI/InPerson/StylesAddAppointmentScreen";
+
+// Spoken suffixes, so a screen reader hears *why* a chip is unavailable
+// instead of just "dimmed button".
+const DATE_STATUS_LABEL = {
+  [DATE_STATUS.ADDED]: ", odabrano",
+  [DATE_STATUS.FULL]: ", popunjeno",
+  [DATE_STATUS.UNAVAILABLE]: ", zatvoreno",
+};
+
+const SLOT_STATUS_LABEL = {
+  [SLOT_STATUS.MINE]: ", tvoj termin",
+  [SLOT_STATUS.TAKEN]: ", zauzeto",
+  [SLOT_STATUS.TRAINER_BUSY]: ", trenerica nije slobodna",
+  [SLOT_STATUS.PAST]: ", termin je prošao",
+};
 
 export default function AddAppointmentScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { addMultipleAppointments, isAdding } = useAddAppointment();
-  const { cancelMultiple, isCancelling } = useCancelAppointment();
+  const { syncWeek, isSaving } = useSyncAppointments();
 
-  const { isOpen, bookableDates, weekStart, weekEnd, nextSaturday } = useMemo(
+  const { bookableDates, weekStart, weekEnd } = useMemo(
     () => getBookingWindow(),
     [],
   );
@@ -47,12 +60,18 @@ export default function AddAppointmentScreen() {
   );
 
   const [slots, setSlots] = useState([]);
+  // What the client already holds on the server — the baseline the submit diffs
+  // against, so untouched bookings are never released and re-taken.
+  const [existingSlots, setExistingSlots] = useState([]);
   const [initialized, setInitialized] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const loading = scheduleLoading || slotsLoading;
-  const isBusy = isAdding || isCancelling;
+  const isBusy = isSaving;
+  const { minSlotsPerWeek: MIN_SLOTS, maxSlotsPerWeek: MAX_SLOTS } =
+    BOOKING_POLICY;
 
   // The trainer's schedule counts only if it was saved for exactly this
   // booking week — a schedule from an older week would show wrong times.
@@ -68,52 +87,52 @@ export default function AddAppointmentScreen() {
     }
     existing.sort((a, b) => a.date.localeCompare(b.date));
     setSlots(existing);
+    setExistingSlots(existing);
     setInitialized(true);
   }, [loading, initialized, bookedSlots, user?.uid]);
 
   const addedDates = slots.map((s) => s.date);
 
-  const getDateStatus = (date) => {
-    if (addedDates.includes(date)) return "added";
-    const workStart = getTrainerWorkStartForDate(schedule, date);
-    const trainerFree = getFreeClientTimes(workStart);
-    if (!trainerFree.length) return "unavailable";
-    const dayBooked = bookedSlots[date] ?? [];
-    const takenByOthers = dayBooked
-      .filter((b) => b.userId !== user?.uid)
-      .map((b) => b.time);
-    if (trainerFree.every((t) => takenByOthers.includes(t))) return "full";
-    return "available";
-  };
+  const dateStatusFor = (date) =>
+    getDateStatus({
+      date,
+      schedule,
+      bookedForDate: bookedSlots[date] ?? [],
+      userId: user?.uid,
+      selectedDates: addedDates,
+    });
 
   const timesForDate = useMemo(() => {
     if (!selectedDate) return [];
-    const workStart = getTrainerWorkStartForDate(schedule, selectedDate);
-    const trainerFree = getFreeClientTimes(workStart);
-    const dayBooked = bookedSlots[selectedDate] ?? [];
+    const bookedForDate = bookedSlots[selectedDate] ?? [];
 
     return CLIENT_APPOINTMENT_START_TIMES.map((time) => {
-      const bookedEntry = dayBooked.find((b) => b.time === time);
-      const isTrainerFree = trainerFree.includes(time);
-      const isTakenByOther = bookedEntry && bookedEntry.userId !== user?.uid;
-
+      const status = getSlotStatus({
+        date: selectedDate,
+        time,
+        schedule,
+        bookedForDate,
+        userId: user?.uid,
+      });
       return {
         time,
-        isTrainerFree,
-        isTakenByOther,
-        isAvailable: isTrainerFree && !isTakenByOther,
+        status,
+        isTakenByOther: status === SLOT_STATUS.TAKEN,
+        isAvailable:
+          status === SLOT_STATUS.AVAILABLE || status === SLOT_STATUS.MINE,
       };
     });
   }, [selectedDate, schedule, bookedSlots, user?.uid]);
 
   const handleSelectDate = (date) => {
-    if (getDateStatus(date) !== "available") return;
+    if (dateStatusFor(date) !== DATE_STATUS.AVAILABLE) return;
     setSelectedDate(date);
     setSelectedTime(null);
   };
 
   const handleAddSlot = () => {
-    if (!selectedDate || !selectedTime || slots.length >= 4) return;
+    if (!selectedDate || !selectedTime || slots.length >= MAX_SLOTS) return;
+    setSubmitError(null);
     setSlots((prev) =>
       [...prev, { date: selectedDate, time: selectedTime }].sort((a, b) =>
         a.date.localeCompare(b.date),
@@ -124,76 +143,39 @@ export default function AddAppointmentScreen() {
   };
 
   const handleRemoveSlot = (date) => {
+    setSubmitError(null);
     setSlots((prev) => prev.filter((s) => s.date !== date));
     if (selectedDate === date) setSelectedDate(null);
   };
 
-  const canAdd = selectedDate && selectedTime && slots.length < 4;
-  const canSubmit = slots.length >= 2 && !isBusy;
+  const canAdd = selectedDate && selectedTime && slots.length < MAX_SLOTS;
+  const canSubmit = slots.length >= MIN_SLOTS && !isBusy;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    setSubmitError(null);
 
-    // Find IDs of existing bookings from already-loaded bookedSlots
-    const existingIds = Object.values(bookedSlots)
-      .flat()
-      .filter((s) => s.userId === user?.uid)
-      .map((s) => s.id);
-
-    const cancel = await cancelMultiple(existingIds);
-    if (!cancel.success) {
-      Alert.alert("Greška", "Nije moguće ažurirati raspored. Pokušaj ponovo.");
+    // Re-check the whole selection against live availability: the client may
+    // have had this screen open while somebody else took one of these slots.
+    const check = validateSelection(slots, {
+      bookableDates,
+      schedule,
+      bookedSlots,
+      userId: user?.uid,
+    });
+    if (!check.ok) {
+      setSubmitError(check.error);
       return;
     }
 
-    const result = await addMultipleAppointments(
-      user.uid,
-      user.displayName,
-      user.photoURL,
-      slots,
-    );
+    const result = await syncWeek(user.uid, slots, existingSlots);
 
     if (result.success) {
       navigation.goBack();
     } else {
-      Alert.alert("Greška", "Termini nisu dodani. Pokušaj ponovo.");
+      setSubmitError(result.error);
     }
   };
-
-  // ─── Booking closed ─────────────────────────────────────────────────────────
-  if (!isOpen) {
-    return (
-      <View style={styles.screen}>
-        <StatusBar style={theme.statusBar} />
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.container}>
-            <Pressable
-              style={styles.backBtn}
-              onPress={() => navigation.goBack()}
-            >
-              <CaretLeft size={20} color={theme.textPrimary} />
-            </Pressable>
-            <Text style={styles.title}>Rezervacija termina</Text>
-            <Text style={styles.subtitle}>
-              Termini za sljedeći tjedan mogu se rezervirati isključivo subotom.
-            </Text>
-            <View style={styles.closedCard}>
-              <Text style={styles.closedIcon}>📅</Text>
-              <Text style={styles.closedTitle}>
-                Rezervacija je trenutno zatvorena
-              </Text>
-              <Text style={styles.closedText}>
-                Sljedeće otvaranje rezervacije:
-              </Text>
-              <Text style={styles.closedDate}>
-                {formatDateLong(nextSaturday)}
-              </Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   // ─── Booking open ────────────────────────────────────────────────────────────
   return (
@@ -204,9 +186,15 @@ export default function AddAppointmentScreen() {
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <PressableScale
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Natrag"
+            hitSlop={10}
+          >
             <CaretLeft size={20} color={theme.textPrimary} />
-          </Pressable>
+          </PressableScale>
 
           <Text style={styles.title}>Rezervacija termina</Text>
           <Text style={styles.subtitle}>
@@ -234,7 +222,7 @@ export default function AddAppointmentScreen() {
               <View style={styles.slotsBox}>
                 {slots.length === 0 ? (
                   <Text style={styles.slotsEmpty}>
-                    Dodaj barem 2 termina za rezervaciju.
+                    Dodaj barem {MIN_SLOTS} termina za rezervaciju.
                   </Text>
                 ) : (
                   slots.map((slot) => (
@@ -245,43 +233,53 @@ export default function AddAppointmentScreen() {
                         </Text>
                         <Text style={styles.slotTime}>{slot.time}</Text>
                       </View>
-                      <Pressable
+                      <PressableScale
                         style={styles.slotRemoveBtn}
                         onPress={() => handleRemoveSlot(slot.date)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Ukloni termin ${formatDateLong(slot.date)}`}
+                        hitSlop={8}
                       >
                         <Text style={styles.slotRemoveText}>✕</Text>
-                      </Pressable>
+                      </PressableScale>
                     </View>
                   ))
                 )}
               </View>
 
               <View style={styles.counterRow}>
-                <Text style={styles.counterText}>{slots.length} / 4</Text>
-                {slots.length < 2 && (
-                  <Text style={styles.counterHint}>Minimum 2 dana tjedno</Text>
+                <Text style={styles.counterText}>
+                  {slots.length} / {MAX_SLOTS}
+                </Text>
+                {slots.length < MIN_SLOTS && (
+                  <Text style={styles.counterHint}>
+                    Minimum {MIN_SLOTS} dana tjedno
+                  </Text>
                 )}
-                {slots.length === 4 && (
+                {slots.length === MAX_SLOTS && (
                   <Text style={styles.counterHint}>Maksimum dostignut</Text>
                 )}
               </View>
 
               {/* ── Dodaj termin ─────────────────────────────────────────── */}
-              {slots.length < 4 && (
+              {slots.length < MAX_SLOTS && (
                 <>
                   <Text style={[styles.label, { marginTop: 24 }]}>
                     ODABERI DAN
                   </Text>
                   <View style={styles.dateList}>
                     {bookableDates.map((date) => {
-                      const status = getDateStatus(date);
+                      const status = dateStatusFor(date);
                       const isSelected = selectedDate === date;
 
                       return (
-                        <Pressable
+                        <PressableScale
                           key={date}
-                          disabled={status !== "available"}
+                          disabled={status !== DATE_STATUS.AVAILABLE}
                           onPress={() => handleSelectDate(date)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isSelected }}
+                          accessibilityLabel={`${formatDateLong(date)}${DATE_STATUS_LABEL[status] ?? ""}`}
                           style={[
                             styles.dateChip,
                             isSelected && styles.chipActive,
@@ -310,7 +308,7 @@ export default function AddAppointmentScreen() {
                           {status === "full" && (
                             <Text style={styles.fullBadge}>Popunjeno</Text>
                           )}
-                        </Pressable>
+                        </PressableScale>
                       );
                     })}
                   </View>
@@ -322,11 +320,16 @@ export default function AddAppointmentScreen() {
                       </Text>
                       <View style={styles.timeGrid}>
                         {timesForDate.map(
-                          ({ time, isAvailable, isTakenByOther }) => (
-                            <Pressable
+                          ({ time, status, isAvailable, isTakenByOther }) => (
+                            <PressableScale
                               key={time}
                               disabled={!isAvailable}
                               onPress={() => setSelectedTime(time)}
+                              accessibilityRole="button"
+                              accessibilityState={{
+                                selected: selectedTime === time,
+                              }}
+                              accessibilityLabel={`${time}${SLOT_STATUS_LABEL[status] ?? ""}`}
                               style={[
                                 styles.timeChip,
                                 selectedTime === time && styles.chipActive,
@@ -346,28 +349,35 @@ export default function AddAppointmentScreen() {
                               >
                                 {time}
                               </Text>
-                            </Pressable>
+                            </PressableScale>
                           ),
                         )}
                       </View>
                     </>
                   )}
 
-                  <Pressable
+                  <PressableScale
                     style={[
                       styles.addSlotBtn,
                       !canAdd && styles.submitBtnDisabled,
                     ]}
                     disabled={!canAdd}
                     onPress={handleAddSlot}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.addSlotBtnText}>+ Dodaj termin</Text>
-                  </Pressable>
+                  </PressableScale>
                 </>
               )}
 
               {/* ── Submit ───────────────────────────────────────────────── */}
-              <Pressable
+              {!!submitError && (
+                <View style={styles.errorBanner} accessibilityRole="alert">
+                  <Text style={styles.errorBannerText}>{submitError}</Text>
+                </View>
+              )}
+
+              <PressableScale
                 style={[
                   styles.submitBtn,
                   { marginTop: 20 },
@@ -375,17 +385,19 @@ export default function AddAppointmentScreen() {
                 ]}
                 disabled={!canSubmit}
                 onPress={handleSubmit}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !canSubmit, busy: isBusy }}
               >
                 {isBusy ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.submitBtnText}>
-                    {slots.length >= 2
+                    {slots.length >= MIN_SLOTS
                       ? "Pošalji raspored"
-                      : `Još ${2 - slots.length} termin${2 - slots.length === 1 ? "" : "a"} do minimuma`}
+                      : `Još ${MIN_SLOTS - slots.length} termin${MIN_SLOTS - slots.length === 1 ? "" : "a"} do minimuma`}
                   </Text>
                 )}
-              </Pressable>
+              </PressableScale>
             </>
           )}
         </ScrollView>
