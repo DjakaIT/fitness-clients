@@ -183,6 +183,68 @@ not mention would start falling to the default-deny catch-all. The diff lists
 exactly that. `firebase.json` deliberately declares only `rules`, never
 `indexes`, so a deploy can never touch your Firestore indexes.
 
+## Releasing to Google Play
+
+Distribution goes through the **Internal testing** track: installs and updates
+arrive through the Play Store, there is no review wait, and it is limited to a
+tester list you control.
+
+```bash
+npx eas build --profile production --platform android   # AAB
+npx eas submit --profile production --platform android  # → Internal testing
+```
+
+`eas.json` sets `autoIncrement` with `appVersionSource: "remote"`, so EAS
+assigns each build a higher `versionCode` — Play rejects a repeat.
+
+### Shipping a JS fix without a new build
+
+`expo-updates` is configured, so anything that does not touch native code ships
+over the air:
+
+```bash
+npx eas update --branch production --message "what changed"
+```
+
+Testers pick it up on next launch. `runtimeVersion` follows `version` in
+app.json, so an update only reaches builds declaring the same version. Bumping
+`version` — or adding a native dependency — means a real build and a new Play
+upload. That boundary is the point: it is what stops an OTA update from landing
+on a binary that cannot run it.
+
+### Play App Signing will break Google sign-in unless you do this
+
+Play re-signs the app with its own key, so the **SHA-1 of the installed app is
+not the one you built with**. Google sign-in validates that fingerprint, so
+login fails on the Play build while working perfectly locally.
+
+After the first upload: Play Console → Test and release → Setup → **App
+signing** → copy the SHA-1 under _App signing key certificate_, then Firebase
+Console → Project settings → Your apps → Android → **Add fingerprint**.
+
+Add the EAS _upload_ key fingerprint too (`npx eas credentials`) if you ever
+install a build directly rather than through Play.
+
+### Store listing requirements
+
+- **Privacy policy URL is mandatory** — this app collects account data, body
+  measurements and personal reflections. A draft is in
+  [`docs/privacy-policy.md`](docs/privacy-policy.md); fill in the bracketed
+  fields and host it at a public URL.
+- **Data safety form** — declare Personal info (name, email, photo) and
+  **Health and fitness** (body measurements). Both are collected, neither is
+  shared with third parties, both are encrypted in transit, and deletion can be
+  requested.
+- **Store icon** — Play wants a 512×512 PNG, and Expo wants 1024×1024 for the
+  app icon. The current icon is a 500×500 JPEG, which has no transparency and
+  will be cropped inside the adaptive-icon mask. Export a proper PNG before
+  release; keep the logo inside the centre 66% so the mask does not clip it.
+
+### Before the first upload
+
+Deploy the Firestore rules (see above). Until then the live database still runs
+the old permissive ruleset, and publishing would put that in real users' hands.
+
 ## Re-branding for another trainer
 
 The app is built so a new deployment is configuration, not a rewrite.
