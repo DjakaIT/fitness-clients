@@ -6,15 +6,15 @@
  * src/hooks/useAppointments write path) and again in firestore.rules, so a
  * client that skips the UI still cannot create an illegal booking.
  */
-import { BOOKING_POLICY } from "../config/tenant";
+import { BOOKING_POLICY } from "../config/tenant.js";
 import {
   CLIENT_APPOINTMENT_START_TIMES,
   getFreeClientTimes,
   getTrainerWorkStartForDate,
   hoursUntilAppointment,
   parseLocalDate,
-} from "./appointmentConfig";
-import { validate, weeklySlotSelectionSchema } from "./appointmentSchemas";
+} from "./appointmentConfig.js";
+import { validate, weeklySlotSelectionSchema } from "./appointmentSchemas.js";
 
 /**
  * One appointment document per slot, keyed by the slot itself. This is the

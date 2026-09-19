@@ -6,7 +6,7 @@
  * Every size, boundary and policy number comes from BOOKING_POLICY — see
  * backend/config/tenant.js.
  */
-import { BOOKING_POLICY } from "../config/tenant";
+import { BOOKING_POLICY } from "../config/tenant.js";
 
 // ─── Display maps ─────────────────────────────────────────────────────────────
 const DAYS_LONG = [

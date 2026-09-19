@@ -10,7 +10,7 @@
  * Pure on purpose: the plan is computed and asserted in tests, and the script
  * in scripts/migrate-appointments.mjs only executes it.
  */
-import { slotDocId } from "../utils/bookingRules";
+import { slotDocId } from "../utils/bookingRules.js";
 
 export const SLOT_ID_RE = /^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}$/;
 
@@ -86,8 +86,15 @@ export function planMigration(docs = [], { purgeCancelled = false } = {}) {
 
     const cancelled = data.status === "cancelled";
     if (cancelled && !purgeCancelled) {
-      // Holds no slot, so it cannot cause a double booking.
-      cancelledLeftAlone.push({ id });
+      // Holds no slot, so it cannot cause a double booking and can stay where
+      // it is. It may still carry the name and photo the old code wrote,
+      // though, and every approved client can read this collection — so redact
+      // those even when the document itself is left alone.
+      if (data.userName !== undefined || data.userPhoto !== undefined) {
+        moves.push({ fromId: id, toId: null, payload: null, action: "redact" });
+      } else {
+        cancelledLeftAlone.push({ id });
+      }
       continue;
     }
     if (cancelled) {

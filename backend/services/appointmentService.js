@@ -10,8 +10,8 @@
  * contend on the same key and Firestore serialises them — the loser's
  * transaction re-runs, re-reads the now-taken slot, and fails loudly.
  */
-import { diffSlotSelection, slotDocId } from "../utils/bookingRules";
-import { canCancel } from "../utils/appointmentConfig";
+import { diffSlotSelection, slotDocId } from "../utils/bookingRules.js";
+import { canCancel } from "../utils/appointmentConfig.js";
 
 export class SlotTakenError extends Error {
   constructor(slot) {

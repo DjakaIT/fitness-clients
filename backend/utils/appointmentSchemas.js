@@ -7,7 +7,7 @@
  * reject a write, but it cannot tell the client *which* field was wrong.
  */
 import { z } from "zod";
-import { BOOKING_POLICY } from "../config/tenant";
+import { BOOKING_POLICY } from "../config/tenant.js";
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;

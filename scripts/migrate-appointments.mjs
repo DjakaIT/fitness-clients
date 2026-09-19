@@ -112,8 +112,8 @@ async function main() {
 
   for (const move of plan.moves) {
     const label =
-      move.action === "delete"
-        ? `delete  ${move.fromId} (cancelled)`
+      move.toId === null
+        ? `${move.action.padEnd(7)} ${move.fromId} (cancelled)`
         : `${move.action.padEnd(7)} ${move.fromId}  →  ${move.toId}`;
     console.log(`  ${label}`);
   }
@@ -151,6 +151,17 @@ async function main() {
 
     if (move.action === "delete") {
       await fromRef.delete();
+      done += 1;
+      continue;
+    }
+
+    // Cancelled leftovers keep their document but lose the name and photo the
+    // old code stored on it.
+    if (move.action === "redact") {
+      await fromRef.update({
+        userName: admin.firestore.FieldValue.delete(),
+        userPhoto: admin.firestore.FieldValue.delete(),
+      });
       done += 1;
       continue;
     }

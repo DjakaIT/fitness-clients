@@ -200,6 +200,28 @@ describe("planMigration — cancelled and malformed", () => {
     expect(plan.cancelledLeftAlone).toEqual([{ id: "r1" }]);
   });
 
+  // Every approved client can read the appointments collection, so a name left
+  // on a cancelled leftover is still a leak even though the document is inert.
+  it("redacts the name and photo from a cancelled leftover", () => {
+    const plan = planMigration([
+      legacy("r1", {
+        status: "cancelled",
+        userName: "Ana Anić",
+        userPhoto: "https://x/y.jpg",
+      }),
+    ]);
+
+    expect(plan.cancelledLeftAlone).toEqual([]);
+    expect(plan.moves).toEqual([
+      { fromId: "r1", toId: null, payload: null, action: "redact" },
+    ]);
+  });
+
+  it("does not redact one that carries no personal data", () => {
+    const plan = planMigration([legacy("r1", { status: "cancelled" })]);
+    expect(plan.moves).toEqual([]);
+  });
+
   it("deletes them only when explicitly asked", () => {
     const plan = planMigration([legacy("r1", { status: "cancelled" })], {
       purgeCancelled: true,
