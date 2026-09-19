@@ -62,3 +62,18 @@ app.json
 
 # Coverage output
 coverage/
+
+# Firebase service account keys — these grant full admin access to the
+# project. Never commit one; the migration script reads it from
+# GOOGLE_APPLICATION_CREDENTIALS instead.
+serviceAccountKey*.json
+service-account*.json
+*-firebase-adminsdk-*.json
+
+# Firebase CLI / emulator local state
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log

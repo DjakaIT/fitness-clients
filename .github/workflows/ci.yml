@@ -31,6 +31,16 @@ jobs:
       - name: Run tests
         run: npm run test:coverage -- --ci --maxWorkers=2
 
+      # The emulator needs a JVM. No credentials involved — it never touches
+      # the real project.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Run security rules tests
+        run: npm run rules:test
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4

@@ -110,6 +110,32 @@ service cloud.firestore {
           && slotIdMatchesData();
       }
 
+      // The stored slot start, rebuilt from its two string fields.
+      //
+      // timestamp.date() is UTC while the app books in local time, so for a
+      // UTC+1/+2 trainer this lands 1–2h AFTER the real start. That makes the
+      // deadline below slightly *looser* than 24h, never tighter — the backstop
+      // can never wrongly refuse a legitimate cancellation. The exact 24h rule
+      // is enforced in the app and re-checked inside the write transaction;
+      // this exists so a tampered client still cannot cancel an hour before.
+      function slotStart() {
+        return timestamp.date(
+            int(resource.data.appointmentDate[0:4]),
+            int(resource.data.appointmentDate[5:7]),
+            int(resource.data.appointmentDate[8:10])
+          )
+          + duration.value(int(resource.data.time[0:2]), 'h')
+          + duration.value(int(resource.data.time[3:5]), 'm');
+      }
+
+      function beforeCancellationDeadline() {
+        return resource.data.appointmentDate is string
+          && resource.data.appointmentDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && resource.data.time is string
+          && resource.data.time.matches('^[0-9]{2}:[0-9]{2}$')
+          && request.time < slotStart() - duration.value(24, 'h');
+      }
+
       // Clients need the whole week's slots to know what is still free. The
       // document deliberately carries no name or photo, so this exposes nothing
       // beyond an opaque uid.
@@ -121,9 +147,11 @@ service cloud.firestore {
             || (isActiveClient() && isOwner(request.resource.data.userId)));
 
       allow update: if isTrainer()
-        // Client releases their own slot.
+        // Client releases their own slot, but only up to 24h before it starts.
+        // The trainer is not bound by the deadline — she can always free a slot.
         || (isOwner(resource.data.userId)
             && request.resource.data.status == 'cancelled'
+            && beforeCancellationDeadline()
             && unchanged('userId')
             && unchanged('appointmentDate')
             && unchanged('time'))

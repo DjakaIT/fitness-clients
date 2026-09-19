@@ -3,6 +3,9 @@ module.exports = {
   preset: "jest-expo",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testMatch: ["<rootDir>/__tests__/**/*.test.{js,jsx}"],
+  // Rules tests need the emulator and plain Node, not jest-expo.
+  // They run via `npm run rules:test` with jest.rules.config.js.
+  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/__tests__/rules/"],
   collectCoverageFrom: [
     "backend/**/*.js",
     "src/hooks/**/*.jsx",

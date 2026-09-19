@@ -31,10 +31,16 @@ thing protecting your data is `firestore.rules`.
 ## Tests
 
 ```bash
-npm test                 # everything
+npm test                 # app suite
 npm run test:coverage    # with coverage + thresholds
 npm run test:watch
+npm run rules:test       # security rules, against the Firestore emulator
 ```
+
+The rules suite needs Java on PATH (the emulator is a JVM process); Android
+Studio's bundled JDK is enough. It runs in plain Node under
+`jest.rules.config.js`, separate from the app suite, which runs under
+`jest-expo` with Firebase mocked.
 
 Coverage thresholds are tiered (see `jest.config.js`): the booking domain in
 `backend/` is held at 95–100%, the hook layer lower, because that layer is
@@ -96,15 +102,24 @@ They are still readable and still cancellable, but a slot held by such a
 document can be booked a second time, because the new write targets
 `"<date>_<time>"` and would not collide with it.
 
-Bookings only ever cover the upcoming week, so the cheapest fix is to deploy
-between weeks, or to clear the old documents once:
+`scripts/migrate-appointments.mjs` rewrites them onto their slot ids. **No
+booking is cancelled** — every client keeps the sessions they already have, and
+the script drops the `userName` / `userPhoto` fields that should never have been
+on the document. It is dry run by default and safe to re-run.
 
-```js
-// Firebase console → Firestore → appointments
-// Delete every document whose id is not "<YYYY-MM-DD>_<HH:MM>".
+```bash
+# Firebase console → Project settings → Service accounts → Generate new private key
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+
+npm run migrate:appointments              # show the plan, write nothing
+npm run migrate:appointments -- --apply   # execute it
 ```
 
-After that, every appointment is slot-keyed and the collision guarantee holds.
+Two clients can turn out to hold the same slot — only possible because the old
+code allowed it. The script reports those and changes nothing, because either
+choice takes a session away from someone; decide who keeps it, remove the other
+booking, and re-run. Everything else is resolved automatically: a client booked
+twice for one slot is de-duplicated, and a released slot is re-claimed.
 
 ## Security model
 
@@ -127,11 +142,36 @@ who can see only their own data.
   readable by their owner and the trainer only.
 - **Default deny.** Any path not matched explicitly is denied.
 
-Deploy rules after any change:
+### Cancellation deadline
+
+A client may cancel up to 24h before the session starts; after that only the
+trainer can. That rule is enforced in three places: the sheet greys the button
+out, `cancelAppointmentInTransaction` re-checks it against the stored document,
+and `firestore.rules` refuses the write outright.
+
+The rules copy rebuilds the slot start from its two string fields with
+`timestamp.date()`, which is UTC while the app books in local time. For a
+UTC+1/+2 trainer that lands 1–2h _after_ the true start, making the rule
+slightly looser than 24h — never tighter, so it can never wrongly refuse a
+legitimate cancellation. The exact deadline is the app's; the rule is the
+backstop against a tampered client.
+
+### Working on the rules
 
 ```bash
-firebase deploy --only firestore:rules
+npm run rules:test     # 34 tests against the Firestore emulator (needs Java)
+npm run rules:diff     # show the LIVE rules and what they cover vs. this file
+npm run rules:deploy   # firebase deploy --only firestore:rules
 ```
+
+`rules:test` is the one to run first — it asserts every claim on this page
+against the real rules engine, locally, without touching production.
+
+**Before the first deploy, run `npm run rules:diff`.** Deploying replaces the
+live ruleset wholesale, so a collection the console protects but this file does
+not mention would start falling to the default-deny catch-all. The diff lists
+exactly that. `firebase.json` deliberately declares only `rules`, never
+`indexes`, so a deploy can never touch your Firestore indexes.
 
 ## Re-branding for another trainer
 
