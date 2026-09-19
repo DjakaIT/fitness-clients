@@ -221,6 +221,14 @@ npx eas submit --profile production --platform android  # → Internal testing
 Build first, submit second — `eas submit` has nothing to send until a build
 exists on EAS.
 
+**The very first release has to be uploaded by hand.** The Google Play
+Developer API cannot seed an app that has never had a release, and `eas submit`
+also needs a Play service account key with API access — a different credential
+from the Firebase one, created under Play Console → Setup → API access. So for
+release one: download the AAB from its EAS build page and upload it in Play
+Console → Internal testing → Create new release. Every release after that can
+go through `eas submit`.
+
 ### The cloud builder cannot see your .env
 
 `.env` and `google-services.json` are gitignored, and EAS uploads the project
