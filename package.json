@@ -15,7 +15,8 @@
     "rules:diff": "node scripts/rules-diff.mjs",
     "rules:deploy": "firebase deploy --only firestore:rules",
     "rules:test": "firebase emulators:exec --only firestore \"jest --config jest.rules.config.js\"",
-    "migrate:appointments": "node scripts/migrate-appointments.mjs"
+    "migrate:appointments": "node scripts/migrate-appointments.mjs",
+    "seed:videos": "node scripts/seed-videos.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

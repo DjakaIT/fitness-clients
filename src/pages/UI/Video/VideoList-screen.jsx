@@ -1,13 +1,14 @@
-import { View, FlatList } from "react-native";
+import { View, FlatList, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import VideoCard from "../../../components/VideoCard";
-import { getVideosByCategory } from "../../../../backend/data/videos";
+import useVideos from "../../../hooks/useVideos";
 import { makeStyles } from "../../../styles/UI/VideoStyles/StylesVideoList";
 import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 
 export default function VideoScreen({ route, navigation }) {
   const { category } = route.params;
-  const videos = getVideosByCategory(category);
+  const { videos: allVideos, loading } = useVideos();
+  const videos = allVideos.filter((v) => v.category === category);
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
@@ -16,6 +17,13 @@ export default function VideoScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <StatusBar style={theme.statusBar} />
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color={theme.accent}
+          style={{ marginTop: 40 }}
+        />
+      )}
       <FlatList
         data={videos}
         keyExtractor={(item) => item.id}

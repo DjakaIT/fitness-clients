@@ -15,7 +15,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
 import ConfirmSheet from "../../components/ConfirmSheet";
-import { VIDEOS } from "../../../backend/data/videos";
+import useVideos from "../../hooks/useVideos";
 import useSaveWorkout from "../../hooks/useSaveWorkout";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
 import useDeleteWorkout from "../../hooks/useDeleteWorkout";
@@ -24,8 +24,6 @@ import {
   formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminWorkoutBuilder";
-
-const CATEGORIES = [...new Set(VIDEOS.map((v) => v.category))];
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -55,7 +53,13 @@ export default function AdminWorkoutBuilderScreen() {
   const [activeTraining, setActiveTraining] = useState(0);
   // { 0: [{exerciseId, name, sets, reps, note}], 1: [...], ... }
   const [trainingExercises, setTrainingExercises] = useState({});
-  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+  const { videos, categories } = useVideos();
+  // The catalogue arrives asynchronously now, so the first category can only
+  // be selected once it is there.
+  const [activeCategory, setActiveCategory] = useState(null);
+  useEffect(() => {
+    if (!activeCategory && categories.length) setActiveCategory(categories[0]);
+  }, [activeCategory, categories]);
 
   // Modal state
   const [modal, setModal] = useState(null); // { id, title, category }
@@ -100,8 +104,8 @@ export default function AdminWorkoutBuilderScreen() {
   }, [existing, existingLoading, prefilled]);
 
   const filteredExercises = useMemo(
-    () => VIDEOS.filter((v) => v.category === activeCategory),
-    [activeCategory],
+    () => videos.filter((v) => v.category === activeCategory),
+    [videos, activeCategory],
   );
 
   const currentExercises = trainingExercises[activeTraining] ?? [];
@@ -330,7 +334,7 @@ export default function AdminWorkoutBuilderScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryRow}
         >
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Pressable
               key={cat}
               style={[

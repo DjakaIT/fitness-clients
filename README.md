@@ -131,6 +131,30 @@ choice takes a session away from someone; decide who keeps it, remove the other
 booking, and re-run. Everything else is resolved automatically: a client booked
 twice for one slot is de-duplicated, and a released slot is re-claimed.
 
+## The video catalogue
+
+Exercise videos live in the `videos` collection, not in the source tree. The
+trainer adds or renames one from the Firebase console and every client sees it
+immediately — no developer, no rebuild, no store release. It also keeps the
+YouTube ids, which are usually unlisted, out of a public repository.
+
+`scripts/seed-videos.mjs` loads an existing `backend/data/videos.js` into
+Firestore once:
+
+```bash
+npm run seed:videos              # show what would be written
+npm run seed:videos -- --apply   # write it
+```
+
+**Document ids are preserved exactly.** Saved workout programs reference
+exercises by id, so renumbering them would silently empty every existing
+program. The script refuses duplicate ids for the same reason, and `--prune`
+(off by default) removes videos that are no longer in the source.
+
+Each document is `{ youtubeID, title, category, order }`. `order` keeps the
+catalogue's own sequence; `useVideos` sorts on it and derives the category list
+from first appearance.
+
 ## Security model
 
 There is exactly one privileged role: the trainer. Everything else is a client

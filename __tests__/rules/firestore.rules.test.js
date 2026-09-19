@@ -547,6 +547,52 @@ describe("trainer schedule", () => {
   });
 });
 
+describe("video catalogue", () => {
+  beforeEach(() =>
+    seed((db) =>
+      setDoc(doc(db, "videos", "1"), {
+        youtubeID: "abc123",
+        title: "Dead bug",
+        category: "Trbušni mišići",
+        order: 0,
+      }),
+    ),
+  );
+
+  it("is readable by an approved client", async () => {
+    await assertSucceeds(getDocs(collection(clientDb("clientA"), "videos")));
+  });
+
+  // The videos are the paid product; someone still in the waiting room has not
+  // been approved to see them.
+  it("is not readable by a client still in the waiting room", async () => {
+    const db = authed("pendingC", "pendingC@example.com");
+    await assertFails(getDoc(doc(db, "videos", "1")));
+  });
+
+  it("is writable only by the trainer", async () => {
+    await assertFails(
+      updateDoc(doc(clientDb("clientA"), "videos", "1"), { title: "hacked" }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(trainerDb(), "videos", "1"), { title: "Dead bug (legs)" }),
+    );
+  });
+
+  it("lets the trainer add and remove a video", async () => {
+    const db = trainerDb();
+    await assertSucceeds(
+      setDoc(doc(db, "videos", "99"), {
+        youtubeID: "xyz789",
+        title: "Novi",
+        category: "Noge",
+        order: 99,
+      }),
+    );
+    await assertSucceeds(deleteDoc(doc(db, "videos", "99")));
+  });
+});
+
 describe("default deny", () => {
   it("refuses a collection the rules do not mention", async () => {
     const db = clientDb("clientA");

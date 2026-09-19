@@ -192,6 +192,16 @@ service cloud.firestore {
       allow write: if isTrainer();
     }
 
+    // ─── Exercise video catalogue ───────────────────────────────────────────
+    // Moved out of the source tree so the trainer can add a video without a
+    // rebuild, and so the (often unlisted) YouTube ids stay out of the repo.
+    // Kept behind approval for the same reason the video screens are.
+
+    match /videos/{videoId} {
+      allow read: if isTrainer() || isActiveClient();
+      allow write: if isTrainer();
+    }
+
     // ─── Trainer configuration (schedule, etc.) ─────────────────────────────
     // Everyone signed in reads it to see availability; only the trainer writes.
 

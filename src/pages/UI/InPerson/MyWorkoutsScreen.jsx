@@ -19,7 +19,7 @@ import {
   formatWeekLabel,
 } from "../../../../backend/utils/appointmentConfig";
 import { makeStyles } from "../../../styles/UI/InPerson/StylesMyWorkoutsScreen";
-import { VIDEOS } from "../../../../backend/data/videos";
+import useVideos from "../../../hooks/useVideos";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -36,6 +36,7 @@ export default function MyWorkoutsScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const { videos } = useVideos();
 
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -161,7 +162,7 @@ export default function MyWorkoutsScreen() {
               ) : (
                 <View style={styles.exerciseList}>
                   {currentWorkout.exercises.map((ex, idx) => {
-                    const video = VIDEOS.find((v) => v.id === ex.exerciseId);
+                    const video = videos.find((v) => v.id === ex.exerciseId);
 
                     return (
                       <ExerciseCard
