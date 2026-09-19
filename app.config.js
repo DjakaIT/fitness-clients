@@ -31,6 +31,14 @@ const BLOCKED_PERMISSIONS = [
 export default ({ config }) => ({
   ...config,
 
+  // Android is what this app ships. Without this key Expo defaults to
+  // android + ios + web, and `eas update` / `expo export` bundle all three —
+  // which fails, because the web build of react-native-youtube-iframe needs
+  // react-native-web-webview and that has never been a dependency here. The
+  // web target has never worked; this stops it being bundled as if it did.
+  // Adding a platform back is this line plus its missing dependencies.
+  platforms: ["android"],
+
   // Over-the-air updates. A JS-only fix ships straight to installed testers
   // instead of going through a new build and a new Play upload.
   updates: {
