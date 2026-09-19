@@ -107,10 +107,20 @@ booking is cancelled** — every client keeps the sessions they already have, an
 the script drops the `userName` / `userPhoto` fields that should never have been
 on the document. It is dry run by default and safe to re-run.
 
-```bash
-# Firebase console → Project settings → Service accounts → Generate new private key
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+Firebase console → Project settings → Service accounts → Generate new private
+key, save it outside the repo, then point the scripts at it:
 
+```powershell
+# PowerShell
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\path\to\serviceAccountKey.json"
+```
+
+```bash
+# bash / zsh
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+```
+
+```bash
 npm run migrate:appointments              # show the plan, write nothing
 npm run migrate:appointments -- --apply   # execute it
 ```
