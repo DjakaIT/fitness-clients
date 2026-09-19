@@ -19,8 +19,15 @@ export default function RootNavigator() {
 
   if (!isAuthenticated) return <AuthNavigator />;
   if (isAdmin) return <AdminNavigator />;
-  if (status === "pending" || status === "rejected")
-    return <WaitingRoomScreen />;
+
+  // Anything that is not exactly "active" is not approved. This used to name
+  // the blocked states instead, so a status the model does not know about —
+  // "inactive" exists in production — fell through into the full app, where
+  // firestore.rules then denied every read. The client got empty screens and
+  // spinners rather than an explanation. Fail closed, and match the rules,
+  // which also test for "active" exactly.
+  if (status !== "active") return <WaitingRoomScreen />;
+
   if (trainingType === "in_person") return <InPersonNavigator />;
   return <TabNavigator />;
 }
