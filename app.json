@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "marta-fitness",
+    "slug": "marta-fitness",
+    "version": "1.0.0",
+    "scheme": "com.daniel.martafitness",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.jpeg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.daniel.martafitness"
+    },
+    "android": {
+      "package": "com.daniel.martafitness",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.jpeg",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-dev-client",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.547929281594-lp2pr9a190uu3aa63btk52ih459s3v0e"
+        }
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6930a400-30e0-4a10-8290-711602455a82"
+      }
+    }
+  }
+}
