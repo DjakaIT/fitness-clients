@@ -46,8 +46,9 @@ yarn-error.*
 backend/data/videos.js
 google-services.json
 
-# Expo / app config (local only)
-eas.json
+# Expo / app config
+# app.json stays local; eas.json does NOT — it holds no secrets, only build
+# profiles, and a build nobody else can reproduce is a build you cannot hand over.
 app.json
 
 # Secrets & credentials

@@ -194,6 +194,27 @@ npx eas build --profile production --platform android   # AAB
 npx eas submit --profile production --platform android  # → Internal testing
 ```
 
+Build first, submit second — `eas submit` has nothing to send until a build
+exists on EAS.
+
+### The cloud builder cannot see your .env
+
+`.env` and `google-services.json` are gitignored, and EAS uploads the project
+through git — so neither reaches the builder. Every value they hold has to
+exist as an EAS environment variable instead, or the build produces an app with
+`undefined` Firebase config that dies at login.
+
+```bash
+npx eas env:push production --path .env   # repeat for preview / development
+npx eas env:list --environment production # verify
+```
+
+`GOOGLE_SERVICES_JSON` is already there as a file secret; `app.config.js` reads
+it and falls back to the on-disk file locally.
+
+Each build profile in `eas.json` names its `environment` explicitly, which is
+what binds those variables to the build.
+
 `eas.json` sets `autoIncrement` with `appVersionSource: "remote"`, so EAS
 assigns each build a higher `versionCode` — Play rejects a repeat.
 
