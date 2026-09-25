@@ -16,6 +16,7 @@ import { PRESS_SCALE, SPRINGS, useNativeDriver } from "../styles/motion";
 export default function PressableScale({
   children,
   style,
+  containerStyle,
   scaleTo = PRESS_SCALE,
   disabled = false,
   onPressIn,
@@ -57,7 +58,7 @@ export default function PressableScale({
 
   return (
     <Animated.View
-      style={{ transform: [{ scale }], opacity }}
+      style={[containerStyle, { transform: [{ scale }], opacity }]}
       needsOffscreenAlphaCompositing={useNativeDriver ? undefined : false}
     >
       <Pressable

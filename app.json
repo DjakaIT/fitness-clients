@@ -37,7 +37,15 @@
           "iosUrlScheme": "com.googleusercontent.apps.547929281594-lp2pr9a190uu3aa63btk52ih459s3v0e"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Marta Fitness treba pristup fotografijama da bi mogla dodati slike napretka.",
+          "cameraPermission": "Marta Fitness treba kameru da bi mogla uslikati slike napretka.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

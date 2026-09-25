@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { sharedScreenOptions } from "./navigationConfig";
+import { useAdminStackScreenOptions } from "./navigationConfig";
 import AdminHomeScreen from "../pages/Admin/AdminHomeScreen";
 import AdminUserListScreen from "../pages/Admin/AdminUserListScreen";
 import AdminUserImpressionScreen from "../pages/Admin/AdminUserImpressionScreen";
@@ -15,8 +15,9 @@ import AdminWorkoutBuilderScreen from "../pages/Admin/AdminWorkoutBuilderScreen"
 const Admin = createNativeStackNavigator();
 
 export default function AdminNavigator() {
+  const screenOptions = useAdminStackScreenOptions();
   return (
-    <Admin.Navigator screenOptions={sharedScreenOptions}>
+    <Admin.Navigator screenOptions={screenOptions}>
       <Admin.Screen
         name="AdminHome"
         component={AdminHomeScreen}

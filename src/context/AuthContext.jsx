@@ -10,6 +10,7 @@ import {
 import { auth, db } from "../../backend/config/firebase";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { isAdminEmail } from "../../backend/config/tenant";
+import { resetVideoStore } from "../hooks/useVideos";
 
 const AuthContext = createContext(null);
 
@@ -32,6 +33,9 @@ export function AuthProvider({ children }) {
       }
 
       if (!firebaseUser) {
+        // The catalogue listener outlives screens on purpose; it must not
+        // outlive the session that was allowed to read it.
+        resetVideoStore();
         setUser(null);
         setIsAuthenticated(false);
         setIsAdmin(false);
