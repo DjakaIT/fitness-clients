@@ -12,6 +12,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
+import useExerciseLogs from "../../hooks/useExerciseLogs";
+import { describeProgress } from "../../utils/weightProgress";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
@@ -32,6 +34,7 @@ export default function AdminClientProgramsScreen() {
   );
 
   const { workouts, loading } = useClientWorkouts(userId, weekStart);
+  const { byExercise } = useExerciseLogs(userId);
 
   const totalExercises = workouts.reduce(
     (sum, w) => sum + (w.exercises?.length ?? 0),
@@ -146,6 +149,15 @@ export default function AdminClientProgramsScreen() {
                         </Text>
                         {!!ex.note && (
                           <Text style={s.exerciseNote}>{ex.note}</Text>
+                        )}
+                        {!!describeProgress(
+                          byExercise.get(String(ex.exerciseId)),
+                        ) && (
+                          <Text style={s.exerciseLog}>
+                            {describeProgress(
+                              byExercise.get(String(ex.exerciseId)),
+                            )}
+                          </Text>
                         )}
                       </View>
                       <View style={s.exerciseMetaWrap}>
@@ -315,6 +327,12 @@ const s = StyleSheet.create({
     gap: 12,
   },
   exerciseRowLast: { borderBottomWidth: 0 },
+  exerciseLog: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+    marginTop: 3,
+  },
   exerciseNum: {
     width: 28,
     height: 28,

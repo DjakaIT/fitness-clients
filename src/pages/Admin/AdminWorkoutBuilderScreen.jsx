@@ -19,6 +19,8 @@ import useVideos from "../../hooks/useVideos";
 import useSaveWorkout from "../../hooks/useSaveWorkout";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
 import useDeleteWorkout from "../../hooks/useDeleteWorkout";
+import useExerciseLogs from "../../hooks/useExerciseLogs";
+import { describeProgress } from "../../utils/weightProgress";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
@@ -54,6 +56,8 @@ export default function AdminWorkoutBuilderScreen() {
   // { 0: [{exerciseId, name, sets, reps, note}], 1: [...], ... }
   const [trainingExercises, setTrainingExercises] = useState({});
   const { videos, categories } = useVideos();
+  // What the client actually lifted, so the next program can build on it.
+  const { byExercise } = useExerciseLogs(userId);
   // The catalogue arrives asynchronously now, so the first category can only
   // be selected once it is there.
   const [activeCategory, setActiveCategory] = useState(null);
@@ -313,6 +317,13 @@ export default function AdminWorkoutBuilderScreen() {
                     {ex.sets} ser. × {ex.reps} pon.
                     {ex.note ? `  ·  ${ex.note}` : ""}
                   </Text>
+                  {!!describeProgress(
+                    byExercise.get(String(ex.exerciseId)),
+                  ) && (
+                    <Text style={styles.exerciseLog}>
+                      {describeProgress(byExercise.get(String(ex.exerciseId)))}
+                    </Text>
+                  )}
                 </View>
                 <Pressable
                   style={styles.removeBtn}

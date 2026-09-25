@@ -177,12 +177,89 @@ service cloud.firestore {
       allow update, delete: if isTrainer();
     }
 
-    // ─── Measurements ───────────────────────────────────────────────────────
-    // Body data — read by its owner and the trainer, written by the trainer.
+    // ─── Shared validation ─────────────────────────────────────────────────
+
+    function isDateString(v) {
+      return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // A measurement value as typed: empty, or a short number-ish string.
+    function isShortValue(data, field) {
+      return !(field in data)
+        || (data[field] is string && data[field].size() <= 8);
+    }
+
+    // ─── Measurements (client check-ins) ────────────────────────────────────
+    // Body data. The client enters her own — the trainer cannot measure an
+    // online client — and the trainer reads it. Id pinned to "<uid>_<date>",
+    // so one entry per day and nobody can write under someone else's uid.
 
     match /measurements/{docId} {
       allow read: if isTrainer() || isOwner(resource.data.userId);
-      allow write: if isTrainer();
+
+      allow create, update: if isActiveClient()
+        && isOwner(request.resource.data.userId)
+        && isDateString(request.resource.data.date)
+        && docId == request.auth.uid + '_' + request.resource.data.date
+        && isShortValue(request.resource.data, 'weight')
+        && isShortValue(request.resource.data, 'waist')
+        && isShortValue(request.resource.data, 'hips')
+        && isShortValue(request.resource.data, 'chest')
+        && isShortValue(request.resource.data, 'arms')
+        && (!('photoAngles' in request.resource.data)
+            || (request.resource.data.photoAngles is list
+                && request.resource.data.photoAngles.size() <= 4))
+        && (resource == null || resource.data.userId == request.auth.uid);
+
+      allow delete: if isTrainer() || isOwner(resource.data.userId);
+    }
+
+    // ─── Progress photos ────────────────────────────────────────────────────
+    // The most sensitive data in the app. One document per photo, id pinned
+    // to "<uid>_<date>_<angle>" with the angle limited to four values — which
+    // is what caps a check-in at four photos, structurally rather than by
+    // trusting the client. Content must be a JPEG under the size cap.
+
+    match /progress_photos/{photoId} {
+      allow read: if isTrainer() || isOwner(resource.data.userId);
+
+      allow create, update: if isActiveClient()
+        && isOwner(request.resource.data.userId)
+        && isDateString(request.resource.data.date)
+        && request.resource.data.angle in ['front', 'back', 'left', 'right']
+        && photoId == request.auth.uid + '_' + request.resource.data.date
+                      + '_' + request.resource.data.angle
+        && request.resource.data.mimeType == 'image/jpeg'
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 700000
+        // Base64 of the JPEG start-of-image marker; rejects arbitrary payloads.
+        && request.resource.data.data[0:4] == '/9j/'
+        && (resource == null || resource.data.userId == request.auth.uid);
+
+      allow delete: if isTrainer() || isOwner(resource.data.userId);
+    }
+
+    // ─── Exercise logs (weights the client lifted) ──────────────────────────
+    // Written by the client after a training, read by the trainer when
+    // planning the next one. Id pinned to "<uid>_<exerciseId>".
+
+    match /exercise_logs/{logId} {
+      allow read: if isTrainer() || isOwner(resource.data.userId);
+
+      allow create, update: if isActiveClient()
+        && isOwner(request.resource.data.userId)
+        && request.resource.data.exerciseId is string
+        && logId == request.auth.uid + '_' + request.resource.data.exerciseId
+        && request.resource.data.lastSets is list
+        && request.resource.data.lastSets.size() <= 10
+        && request.resource.data.history is list
+        && request.resource.data.history.size() <= 20
+        && (!('exerciseName' in request.resource.data)
+            || (request.resource.data.exerciseName is string
+                && request.resource.data.exerciseName.size() <= 120))
+        && (resource == null || resource.data.userId == request.auth.uid);
+
+      allow delete: if isTrainer() || isOwner(resource.data.userId);
     }
 
     // ─── Workout programs ───────────────────────────────────────────────────

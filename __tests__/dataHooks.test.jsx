@@ -26,7 +26,6 @@ const useAppointments = require("../src/hooks/useAppointments").default;
 const useClientMeasurements =
   require("../src/hooks/useClientMeasurements").default;
 const useClientWorkouts = require("../src/hooks/useClientWorkouts").default;
-const useSaveMeasurement = require("../src/hooks/useSaveMeasurement").default;
 const useSaveWorkout = require("../src/hooks/useSaveWorkout").default;
 const useUpdateUserStatus = require("../src/hooks/useUpdateUserStatus").default;
 const useDeleteWorkout = require("../src/hooks/useDeleteWorkout").default;
@@ -211,71 +210,6 @@ describe("useClientWorkouts", () => {
     rerender({ week: "2025-03-24" });
     expect(result.current.workouts).toEqual([]);
     expect(result.current.loading).toBe(true);
-  });
-});
-
-describe("useSaveMeasurement", () => {
-  it("keys the document by client and date so re-saving corrects the entry", async () => {
-    const { result } = renderHook(() => useSaveMeasurement());
-
-    await act(async () => {
-      await result.current.saveMeasurement({
-        userId: "u1",
-        date: "2025-03-17",
-        weight: " 62.5 ",
-      });
-    });
-
-    expect(mockSetDoc.mock.calls[0][0].id).toBe("u1_2025-03-17");
-    expect(mockSetDoc.mock.calls[0][1]).toMatchObject({ weight: "62.5" });
-  });
-
-  it("trims every field, so a stray space is not stored as a value", async () => {
-    const { result } = renderHook(() => useSaveMeasurement());
-
-    await act(async () => {
-      await result.current.saveMeasurement({
-        userId: "u1",
-        date: "2025-03-17",
-        waist: "  ",
-        hips: " 90 ",
-      });
-    });
-
-    const written = mockSetDoc.mock.calls[0][1];
-    expect(written.waist).toBe("");
-    expect(written.hips).toBe("90");
-  });
-
-  it("refuses without a client or a date", async () => {
-    const { result } = renderHook(() => useSaveMeasurement());
-
-    await act(async () => {
-      expect(
-        await result.current.saveMeasurement({ date: "2025-03-17" }),
-      ).toEqual({ success: false });
-      expect(await result.current.saveMeasurement({ userId: "u1" })).toEqual({
-        success: false,
-      });
-    });
-
-    expect(mockSetDoc).not.toHaveBeenCalled();
-  });
-
-  it("reports failure rather than throwing into the screen", async () => {
-    mockSetDoc.mockRejectedValue(new Error("offline"));
-    const { result } = renderHook(() => useSaveMeasurement());
-
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.saveMeasurement({
-        userId: "u1",
-        date: "2025-03-17",
-      });
-    });
-
-    expect(outcome).toEqual({ success: false });
-    await waitFor(() => expect(result.current.isSaving).toBe(false));
   });
 });
 

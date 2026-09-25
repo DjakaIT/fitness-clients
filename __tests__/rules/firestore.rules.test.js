@@ -460,19 +460,28 @@ describe("measurements and weekly reviews stay private", () => {
     );
   });
 
-  it("refuses a client writing measurements at all — the trainer records them", async () => {
-    await assertFails(
+  // The model flipped: an online client measures herself and the trainer
+  // reads. The trainer no longer writes measurements.
+  it("lets a client update her own measurements and not the trainer", async () => {
+    await assertSucceeds(
       updateDoc(
         doc(clientDb("clientA"), "measurements", "clientA_2025-03-17"),
-        {
-          weight: "50",
-        },
+        { weight: "61" },
       ),
     );
-    await assertSucceeds(
+    await assertFails(
       updateDoc(doc(trainerDb(), "measurements", "clientA_2025-03-17"), {
-        weight: "61",
+        weight: "50",
       }),
+    );
+  });
+
+  it("refuses a client editing another client's measurements", async () => {
+    await assertFails(
+      updateDoc(
+        doc(clientDb("clientB"), "measurements", "clientA_2025-03-17"),
+        { weight: "50" },
+      ),
     );
   });
 
@@ -543,6 +552,319 @@ describe("trainer schedule", () => {
     );
     await assertSucceeds(
       updateDoc(doc(trainerDb(), "config", "trainerSchedule"), { monday: [] }),
+    );
+  });
+});
+
+describe("client check-ins", () => {
+  const date = "2026-09-25";
+  const measurement = (uid, over = {}) => ({
+    userId: uid,
+    date,
+    weight: "62.5",
+    waist: "70",
+    hips: "",
+    chest: "",
+    arms: "",
+    photoAngles: ["front"],
+    ...over,
+  });
+
+  it("lets an approved client create her own check-in under her id", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA"),
+      ),
+    );
+  });
+
+  it("refuses a check-in filed under someone else's id", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientB_${date}`),
+        measurement("clientB"),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientB"),
+      ),
+    );
+  });
+
+  it("refuses a document id that does not match the date", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", "clientA_2020-01-01"),
+        measurement("clientA"),
+      ),
+    );
+  });
+
+  it("refuses a client still in the waiting room", async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          authed("pendingC", "pendingC@example.com"),
+          "measurements",
+          `pendingC_${date}`,
+        ),
+        measurement("pendingC"),
+      ),
+    );
+  });
+
+  it("refuses oversized values and more than four photo angles", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA", { weight: "x".repeat(50) }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA", {
+          photoAngles: ["front", "back", "left", "right", "top"],
+        }),
+      ),
+    );
+  });
+
+  it("lets the client and the trainer delete a check-in, not another client", async () => {
+    await seed((db) =>
+      setDoc(
+        doc(db, "measurements", `clientA_${date}`),
+        measurement("clientA"),
+      ),
+    );
+    await assertFails(
+      deleteDoc(doc(clientDb("clientB"), "measurements", `clientA_${date}`)),
+    );
+    await assertSucceeds(
+      deleteDoc(doc(clientDb("clientA"), "measurements", `clientA_${date}`)),
+    );
+  });
+});
+
+describe("progress photos", () => {
+  const date = "2026-09-25";
+  const JPEG = "/9j/4AAQSkZJRgABAQ" + "A".repeat(100);
+  const photo = (uid, angle = "front", over = {}) => ({
+    userId: uid,
+    date,
+    angle,
+    mimeType: "image/jpeg",
+    data: JPEG,
+    ...over,
+  });
+  const id = (uid, angle = "front") => `${uid}_${date}_${angle}`;
+
+  it("lets an approved client upload her own photo for a valid angle", async () => {
+    for (const angle of ["front", "back", "left", "right"]) {
+      await assertSucceeds(
+        setDoc(
+          doc(clientDb("clientA"), "progress_photos", id("clientA", angle)),
+          photo("clientA", angle),
+        ),
+      );
+    }
+  });
+
+  // The angle is part of the id and limited to four values — that is what
+  // caps a check-in at four photos.
+  it("refuses a fifth angle", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA", "top")),
+        photo("clientA", "top"),
+      ),
+    );
+  });
+
+  it("refuses an id that does not match the owner, date and angle", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA", "back")),
+        photo("clientA", "front"),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientB")),
+        photo("clientB"),
+      ),
+    );
+  });
+
+  it("refuses anything that is not a JPEG", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA")),
+        photo("clientA", "front", { data: "PHNjcmlwdD4=" }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA")),
+        photo("clientA", "front", { mimeType: "image/png" }),
+      ),
+    );
+  });
+
+  it("refuses a photo over the size cap", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA")),
+        photo("clientA", "front", { data: "/9j/" + "A".repeat(700_000) }),
+      ),
+    );
+  });
+
+  it("refuses a client still in the waiting room", async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          authed("pendingC", "pendingC@example.com"),
+          "progress_photos",
+          id("pendingC"),
+        ),
+        photo("pendingC"),
+      ),
+    );
+  });
+
+  describe("reading", () => {
+    beforeEach(() =>
+      seed((db) =>
+        setDoc(doc(db, "progress_photos", id("clientA")), photo("clientA")),
+      ),
+    );
+
+    it("is allowed for the owner and the trainer", async () => {
+      await assertSucceeds(
+        getDoc(doc(clientDb("clientA"), "progress_photos", id("clientA"))),
+      );
+      await assertSucceeds(
+        getDoc(doc(trainerDb(), "progress_photos", id("clientA"))),
+      );
+    });
+
+    it("is refused for another client, even by query", async () => {
+      await assertFails(
+        getDoc(doc(clientDb("clientB"), "progress_photos", id("clientA"))),
+      );
+      await assertFails(
+        getDocs(
+          query(
+            collection(clientDb("clientB"), "progress_photos"),
+            where("userId", "==", "clientA"),
+          ),
+        ),
+      );
+    });
+
+    it("works as a query for the owner's own date", async () => {
+      await assertSucceeds(
+        getDocs(
+          query(
+            collection(clientDb("clientA"), "progress_photos"),
+            where("userId", "==", "clientA"),
+            where("date", "==", date),
+          ),
+        ),
+      );
+    });
+
+    it("lets the owner delete her photo, not another client", async () => {
+      await assertFails(
+        deleteDoc(doc(clientDb("clientB"), "progress_photos", id("clientA"))),
+      );
+      await assertSucceeds(
+        deleteDoc(doc(clientDb("clientA"), "progress_photos", id("clientA"))),
+      );
+    });
+  });
+});
+
+describe("exercise logs", () => {
+  const log = (uid, exerciseId = "35", over = {}) => ({
+    userId: uid,
+    exerciseId,
+    exerciseName: "HIP THRUST šipka",
+    lastSets: [40, 45, 45],
+    history: [
+      { weekStart: "2026-09-21", trainingNumber: 1, sets: [40, 45, 45] },
+    ],
+    ...over,
+  });
+
+  it("lets a client log her own weights", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(clientDb("clientA"), "exercise_logs", "clientA_35"),
+        log("clientA"),
+      ),
+    );
+  });
+
+  it("refuses a log under another client's id", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "exercise_logs", "clientB_35"),
+        log("clientB"),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "exercise_logs", "clientA_36"),
+        log("clientA", "35"),
+      ),
+    );
+  });
+
+  it("refuses runaway sizes that would bloat the document", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "exercise_logs", "clientA_35"),
+        log("clientA", "35", { lastSets: Array(11).fill(20) }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "exercise_logs", "clientA_35"),
+        log("clientA", "35", { history: Array(21).fill({ sets: [1] }) }),
+      ),
+    );
+  });
+
+  it("is readable by the owner and the trainer, not by another client", async () => {
+    await seed((db) =>
+      setDoc(doc(db, "exercise_logs", "clientA_35"), log("clientA")),
+    );
+    await assertSucceeds(
+      getDoc(doc(clientDb("clientA"), "exercise_logs", "clientA_35")),
+    );
+    await assertSucceeds(
+      getDoc(doc(trainerDb(), "exercise_logs", "clientA_35")),
+    );
+    await assertFails(
+      getDoc(doc(clientDb("clientB"), "exercise_logs", "clientA_35")),
+    );
+  });
+
+  it("refuses a client in the waiting room", async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          authed("pendingC", "pendingC@example.com"),
+          "exercise_logs",
+          "pendingC_35",
+        ),
+        log("pendingC"),
+      ),
     );
   });
 });

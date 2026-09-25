@@ -183,6 +183,12 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 2,
   },
+  exerciseLog: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7C3AED",
+    marginTop: 3,
+  },
   removeBtn: {
     width: 28,
     height: 28,

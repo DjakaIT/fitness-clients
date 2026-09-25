@@ -155,6 +155,51 @@ Each document is `{ youtubeID, title, category, order }`. `order` keeps the
 catalogue's own sequence; `useVideos` sorts on it and derives the category list
 from first appearance.
 
+Each document may also carry `tips: [{ type, text }]` — up to three, one each
+of `form` / `mistake` / `alternative` — shown quietly under the video.
+`backend/data/exerciseTips.js` is the starting set; `npm run seed:tips` writes
+it, refusing any entry whose title does not match the stored video, and leaving
+tips the trainer has since edited alone unless `--overwrite` is passed.
+
+## Weights the client logs
+
+The trainer assigns exercises, sets and reps; the client, who trains remotely,
+logs the weight she used **per set**. One document per client per exercise —
+`exercise_logs/{uid}_{exerciseId}` — so the weight follows the exercise, not the
+week: whenever the trainer puts that exercise into a new training, the client
+sees what she lifted last time, prefilled, and adjusts from there.
+
+- `lastSets` — the most recent session, one number (or `null`) per set.
+- `history` — sessions in date order, capped at 20. Saving the same training
+  twice replaces its entry rather than duplicating it.
+- A training is saved in one transaction; an exercise left blank keeps its
+  previous weights instead of being overwritten with nothing.
+
+The trainer sees "Zadnje: 20 · 22,5 · 22,5 kg ↑ 2,5" next to each exercise in
+the program builder and overview — the heaviest set against the session before.
+
+## Check-ins: measurements and progress photos
+
+The client enters her own measurements and up to four photos per date — the
+trainer cannot measure an online client — and the trainer reads them.
+
+- `measurements/{uid}_{date}` — the values, plus `photoAngles` listing which
+  photos exist, so lists never download an image to say "3 slike".
+- `progress_photos/{uid}_{date}_{angle}` — one JPEG per document, base64,
+  angle ∈ front / back / left / right. The angle is in the id, which is what
+  caps a check-in at four photos: there are only four ids a date can have.
+
+Photos live in Firestore because the project has no Storage bucket and the
+owner chose not to enable billing. Each is resized to 1440 px on the long edge
+and re-encoded, stepping quality down until it fits under 700 000 base64
+characters (Firestore caps a document at 1 MiB). Re-encoding also strips the
+camera's EXIF block — **including GPS coordinates** — so a photo taken at home
+does not carry the client's address. The rules accept only JPEG content under
+the cap, for the four angles, under the writer's own uid.
+
+Moving to Storage later means a Blaze plan, a bucket, storage rules, and a
+script that copies each document's `data` to `progress/{uid}/{date}/{angle}.jpg`.
+
 ## Security model
 
 There is exactly one privileged role: the trainer. Everything else is a client
@@ -172,8 +217,9 @@ who can see only their own data.
   nothing else; the trainer joins against `users` for names. Clients need to
   read the week to see what is free, and this keeps that read from exposing who
   booked what.
-- **Private collections stay private.** Weekly reviews and measurements are
-  readable by their owner and the trainer only.
+- **Private collections stay private.** Weekly reviews, measurements, progress
+  photos and exercise logs are readable by their owner and the trainer only,
+  and writable only by their owner — under an id pinned to her own uid.
 - **Default deny.** Any path not matched explicitly is denied.
 
 ### Cancellation deadline
@@ -193,7 +239,7 @@ backstop against a tampered client.
 ### Working on the rules
 
 ```bash
-npm run rules:test     # 34 tests against the Firestore emulator (needs Java)
+npm run rules:test     # 60 tests against the Firestore emulator (needs Java)
 npm run rules:diff     # show the LIVE rules and what they cover vs. this file
 npm run rules:deploy   # firebase deploy --only firestore:rules
 ```

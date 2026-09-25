@@ -22,15 +22,22 @@ e-mail adresu i profilnu sliku. Lozinku nikad ne vidimo niti pohranjujemo;
 prijavu obavlja Google.
 
 **Podatke o treningu** — rezervirane termine, program vježbanja koji ti
-trenerica dodijeli, i tjedne dojmove koje sama upišeš.
+trenerica dodijeli, kilaže koje upišeš po serijama, i tjedne dojmove koje sama
+upišeš.
 
-**Tjelesne mjere** — težinu te opsege struka, bokova, prsa i ruku, ako ih
-trenerica unese. Ovo su podaci o zdravlju i tretiraju se kao posebna kategorija
+**Tjelesne mjere** — težinu te opsege struka, bokova, prsa i ruku, koje sama
+upisuješ. Ovo su podaci o zdravlju i tretiraju se kao posebna kategorija
 osobnih podataka prema članku 9. GDPR-a.
 
-Ne prikupljamo lokaciju, kontakte, fotografije s uređaja niti podatke o
-korištenju drugih aplikacija. Aplikacija ne sadrži oglase i ne koristi alate za
-praćenje ni analitiku.
+**Slike napretka** — najviše četiri slike po unosu (sprijeda, straga, lijevi i
+desni bok), samo ako ih sama dodaš. Prije spremanja slika se smanjuje i ponovno
+kodira, čime se uklanjaju metapodaci fotografije, uključujući lokaciju na kojoj
+je snimljena. I slike tretiramo kao podatke o zdravlju.
+
+Ne prikupljamo lokaciju, kontakte niti podatke o korištenju drugih aplikacija.
+S uređaja čitamo isključivo slike koje sama odabereš ili uslikaš za unos
+napretka. Aplikacija ne sadrži oglase i ne koristi alate za praćenje ni
+analitiku.
 
 ## Zašto ih obrađujemo
 
@@ -39,14 +46,15 @@ rezervirao koji termin, da ti trenerica može složiti program i pratiti
 napredak. Podatke ne koristimo ni za što drugo.
 
 Pravna osnova je izvršenje ugovora o usluzi treninga (čl. 6. st. 1. b GDPR-a).
-Za tjelesne mjere, kao podatke o zdravlju, osnova je tvoja izričita privola
-(čl. 9. st. 2. a GDPR-a), koju možeš povući u svakom trenutku.
+Za tjelesne mjere i slike napretka, kao podatke o zdravlju, osnova je tvoja
+izričita privola (čl. 9. st. 2. a GDPR-a), koju možeš povući u svakom trenutku —
+najjednostavnije tako da unos obrišeš u aplikaciji.
 
 ## Tko im ima pristup
 
-Tvoja trenerica i ti. Druge klijentice ne mogu vidjeti tvoje mjere, dojmove ni
-programe — to je tehnički onemogućeno pravilima pristupa baze, ne samo
-dogovorom.
+Tvoja trenerica i ti. Druge klijentice ne mogu vidjeti tvoje mjere, slike,
+kilaže, dojmove ni programe — to je tehnički onemogućeno pravilima pristupa
+baze, ne samo dogovorom.
 
 Podatke ne prodajemo i ne dijelimo s trećima u marketinške svrhe.
 
@@ -74,8 +82,9 @@ osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, azop@azop.hr.
 
 ## Brisanje računa
 
-Zatraži brisanje na **[e-mail]** i cijeli račun sa svim podacima bit će obrisan
-u roku od 30 dana.
+Pojedini unos mjera i slika možeš sama trajno obrisati u aplikaciji (Moj
+napredak → unos → Obriši unos). Za brisanje cijelog računa sa svim podacima
+javi se na **[e-mail]** — bit će obrisan u roku od 30 dana.
 
 > **Napomena:** Google Play od 2024. traži da brisanje računa bude moguće
 > zatražiti i putem javno dostupne poveznice, ne samo unutar aplikacije. Ako

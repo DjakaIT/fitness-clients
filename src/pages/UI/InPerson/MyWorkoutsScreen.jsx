@@ -1,27 +1,44 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Animated,
   View,
   Text,
   ScrollView,
-  Pressable,
+  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
-import { CaretLeft, CaretRight, Barbell } from "phosphor-react-native";
+import {
+  CaretLeftIcon,
+  CaretRightIcon,
+  BarbellIcon,
+} from "phosphor-react-native";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useClientWorkouts from "../../../hooks/useClientWorkouts";
+import useVideos from "../../../hooks/useVideos";
+import useExerciseLogs, {
+  useSaveTrainingLogs,
+} from "../../../hooks/useExerciseLogs";
+import PressableScale from "../../../components/PressableScale";
+import Skeleton from "../../../components/Skeleton";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
 } from "../../../../backend/utils/appointmentConfig";
+import {
+  WEIGHT_STEP_KG,
+  formatWeight,
+  parseWeight,
+  prefillSets,
+  setCountFor,
+  stepWeight,
+  summarizeSets,
+} from "../../../../backend/utils/exerciseLog";
 import { makeStyles } from "../../../styles/UI/InPerson/StylesMyWorkoutsScreen";
-import useVideos from "../../../hooks/useVideos";
 
-const toTitleCase = (str) =>
+const toTitleCase = (str = "") =>
   str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
 const pluralVjezba = (n) => {
@@ -31,12 +48,16 @@ const pluralVjezba = (n) => {
   return "vježbi";
 };
 
+const SAVE_NOTE_MS = 3000;
+
 export default function MyWorkoutsScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { videos } = useVideos();
+  const { byId } = useVideos();
+  const { byExercise } = useExerciseLogs(user?.uid);
+  const { saveTraining, isSaving } = useSaveTrainingLogs();
 
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -45,14 +66,88 @@ export default function MyWorkoutsScreen() {
   );
   const [activeTraining, setActiveTraining] = useState(0);
 
+  // What the client has typed but not saved, per exercise slot. Anything not
+  // in here shows the prefilled "last time" values.
+  const [drafts, setDrafts] = useState({});
+  const [note, setNote] = useState(null); // { kind: "ok" | "error", text }
+
   const { workouts, loading } = useClientWorkouts(user?.uid, weekStart);
 
   const sessionsPerWeek = workouts[0]?.sessionsPerWeek ?? workouts.length ?? 0;
-
   const currentWorkout = workouts.find(
     (w) => w.trainingNumber === activeTraining + 1,
   );
-  const exerciseCount = currentWorkout?.exercises?.length ?? 0;
+  const exercises = currentWorkout?.exercises ?? [];
+  const slotKey = (idx) => `${weekStart}#${activeTraining}#${idx}`;
+
+  useEffect(() => {
+    if (!note) return undefined;
+    const t = setTimeout(() => setNote(null), SAVE_NOTE_MS);
+    return () => clearTimeout(t);
+  }, [note]);
+
+  const valuesFor = (ex, idx) =>
+    drafts[slotKey(idx)] ??
+    prefillSets(
+      byExercise.get(String(ex.exerciseId)),
+      setCountFor(ex.sets),
+    ).map(formatWeight);
+
+  const setValue = (ex, idx, setIndex, text) => {
+    const next = [...valuesFor(ex, idx)];
+    next[setIndex] = text;
+    setDrafts((d) => ({ ...d, [slotKey(idx)]: next }));
+  };
+
+  // Progressive overload in one tap: every set that has a weight moves by the
+  // same step. Blank sets stay blank.
+  const nudge = (ex, idx, direction) => {
+    const next = valuesFor(ex, idx).map((text) => {
+      const value = parseWeight(text);
+      return typeof value === "number" && !Number.isNaN(value)
+        ? formatWeight(stepWeight(value, direction))
+        : text;
+    });
+    setDrafts((d) => ({ ...d, [slotKey(idx)]: next }));
+  };
+
+  const dirty = exercises.some((_, idx) => drafts[slotKey(idx)]);
+  const anyInvalid = exercises.some((ex, idx) =>
+    valuesFor(ex, idx).some((text) => Number.isNaN(parseWeight(text))),
+  );
+
+  const handleSave = async () => {
+    if (!dirty || anyInvalid || isSaving) return;
+    const entries = exercises.map((ex, idx) => ({
+      exerciseId: String(ex.exerciseId),
+      exerciseName: ex.name,
+      sets: valuesFor(ex, idx).map(parseWeight),
+    }));
+    const result = await saveTraining({
+      userId: user?.uid,
+      weekStart,
+      trainingNumber: activeTraining + 1,
+      entries,
+    });
+    if (result.success) {
+      setDrafts((d) => {
+        const next = { ...d };
+        exercises.forEach((_, idx) => delete next[slotKey(idx)]);
+        return next;
+      });
+      setNote({ kind: "ok", text: "Kilaže spremljene ✓" });
+    } else {
+      setNote({
+        kind: "error",
+        text: "Nije spremljeno. Provjeri vezu i pokušaj ponovo.",
+      });
+    }
+  };
+
+  const switchWeek = (delta) => {
+    setWeekOffset((p) => p + delta);
+    setActiveTraining(0);
+  };
 
   return (
     <View style={styles.screen}>
@@ -61,50 +156,57 @@ export default function MyWorkoutsScreen() {
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <CaretLeft size={20} color={theme.textPrimary} />
-          </Pressable>
+          <PressableScale
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Natrag"
+            hitSlop={10}
+          >
+            <CaretLeftIcon size={20} color={theme.textPrimary} />
+          </PressableScale>
 
-          <Text style={styles.title}>Moji treninzi</Text>
+          <Text style={styles.title} accessibilityRole="header">
+            Moji treninzi
+          </Text>
 
-          {/* Week selector */}
           <View style={styles.weekSelector}>
-            <Pressable
+            <PressableScale
               style={styles.weekArrow}
-              onPress={() => {
-                setWeekOffset((p) => p - 1);
-                setActiveTraining(0);
-              }}
+              onPress={() => switchWeek(-1)}
+              accessibilityRole="button"
+              accessibilityLabel="Prethodni tjedan"
             >
-              <CaretLeft size={18} color={theme.accent} />
-            </Pressable>
+              <CaretLeftIcon size={18} color={theme.accent} />
+            </PressableScale>
             <View style={styles.weekCenter}>
               <Text style={styles.weekLabel}>{formatWeekLabel(weekStart)}</Text>
               {weekOffset === 0 && (
                 <Text style={styles.weekBadge}>OVAJ TJEDAN</Text>
               )}
             </View>
-            <Pressable
+            <PressableScale
               style={styles.weekArrow}
-              onPress={() => {
-                setWeekOffset((p) => p + 1);
-                setActiveTraining(0);
-              }}
+              onPress={() => switchWeek(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Sljedeći tjedan"
             >
-              <CaretRight size={18} color={theme.accent} />
-            </Pressable>
+              <CaretRightIcon size={18} color={theme.accent} />
+            </PressableScale>
           </View>
 
           {loading ? (
-            <ActivityIndicator
-              color={theme.accent}
-              size="large"
-              style={{ marginTop: 40 }}
-            />
+            <View style={styles.exerciseList}>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} style={{ height: 92 }} radius={22} />
+              ))}
+            </View>
           ) : workouts.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Barbell
+              <BarbellIcon
                 size={40}
                 weight="duotone"
                 color={theme.accent}
@@ -119,20 +221,21 @@ export default function MyWorkoutsScreen() {
             </View>
           ) : (
             <>
-              {/* Training tabs */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.tabRow}
               >
                 {Array.from({ length: sessionsPerWeek }, (_, i) => (
-                  <Pressable
+                  <PressableScale
                     key={i}
                     style={[
                       styles.tab,
                       activeTraining === i && styles.tabActive,
                     ]}
                     onPress={() => setActiveTraining(i)}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: activeTraining === i }}
                   >
                     <Text
                       style={[
@@ -142,42 +245,96 @@ export default function MyWorkoutsScreen() {
                     >
                       Trening {i + 1}
                     </Text>
-                  </Pressable>
+                  </PressableScale>
                 ))}
               </ScrollView>
 
-              {exerciseCount > 0 && (
+              {exercises.length > 0 && (
                 <Text style={styles.countCaption}>
-                  {exerciseCount} {pluralVjezba(exerciseCount)}
+                  {exercises.length} {pluralVjezba(exercises.length)}
                 </Text>
               )}
 
-              {/* Exercise list */}
-              {!currentWorkout || currentWorkout.exercises.length === 0 ? (
+              {exercises.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>
                     Nema vježbi za ovaj trening.
                   </Text>
                 </View>
               ) : (
-                <View style={styles.exerciseList}>
-                  {currentWorkout.exercises.map((ex, idx) => {
-                    const video = videos.find((v) => v.id === ex.exerciseId);
-
-                    return (
+                <>
+                  <View style={styles.exerciseList}>
+                    {exercises.map((ex, idx) => (
                       <ExerciseCard
-                        key={idx}
+                        key={`${ex.exerciseId}-${idx}`}
                         ex={ex}
                         idx={idx}
-                        video={video}
-                        onNavigate={() =>
-                          video &&
+                        styles={styles}
+                        theme={theme}
+                        video={byId.get(String(ex.exerciseId))}
+                        log={byExercise.get(String(ex.exerciseId))}
+                        isThisSession={(log) =>
+                          log?.lastWeekStart === weekStart &&
+                          log?.lastTrainingNumber === activeTraining + 1
+                        }
+                        values={valuesFor(ex, idx)}
+                        onChange={(setIndex, text) =>
+                          setValue(ex, idx, setIndex, text)
+                        }
+                        onNudge={(dir) => nudge(ex, idx, dir)}
+                        onOpenVideo={(video) =>
                           navigation.navigate("WorkoutVideo", { video })
                         }
                       />
-                    );
-                  })}
-                </View>
+                    ))}
+                  </View>
+
+                  <View style={styles.saveBar}>
+                    <PressableScale
+                      style={[
+                        styles.saveBtn,
+                        (!dirty || anyInvalid) && styles.saveBtnDisabled,
+                      ]}
+                      disabled={!dirty || anyInvalid || isSaving}
+                      onPress={handleSave}
+                      accessibilityRole="button"
+                      accessibilityState={{
+                        disabled: !dirty || anyInvalid,
+                        busy: isSaving,
+                      }}
+                    >
+                      {isSaving ? (
+                        <ActivityIndicator color={theme.onAccent} />
+                      ) : (
+                        <Text style={styles.saveBtnText}>Spremi kilaže</Text>
+                      )}
+                    </PressableScale>
+                    {anyInvalid ? (
+                      <Text
+                        style={[styles.saveNote, styles.saveNoteError]}
+                        accessibilityRole="alert"
+                      >
+                        Kilaža mora biti broj do 500 (npr. 22,5).
+                      </Text>
+                    ) : note ? (
+                      <Text
+                        style={[
+                          styles.saveNote,
+                          note.kind === "ok"
+                            ? styles.saveNoteOk
+                            : styles.saveNoteError,
+                        ]}
+                        accessibilityRole="alert"
+                      >
+                        {note.text}
+                      </Text>
+                    ) : (
+                      <Text style={styles.saveNote}>
+                        Upiši kilaže nakon treninga — idući put ih vidiš ovdje.
+                      </Text>
+                    )}
+                  </View>
+                </>
               )}
             </>
           )}
@@ -187,36 +344,32 @@ export default function MyWorkoutsScreen() {
   );
 }
 
-function ExerciseCard({ ex, idx, video, onNavigate }) {
-  const { theme } = useTheme();
-  const styles = useThemedStyles(makeStyles);
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      speed: 60,
-      bounciness: 0,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 6,
-    }).start();
-  };
+function ExerciseCard({
+  ex,
+  idx,
+  styles,
+  theme,
+  video,
+  log,
+  isThisSession,
+  values,
+  onChange,
+  onNudge,
+  onOpenVideo,
+}) {
+  const last = summarizeSets(log?.lastSets);
+  const lastLabel = isThisSession(log) ? "Upisano" : "Zadnji put";
+  const hasAnyWeight = values.some((v) => typeof parseWeight(v) === "number");
 
   return (
-    <Pressable
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      onPress={() => video && onNavigate()}
-    >
-      <Animated.View style={[styles.exerciseCard, { transform: [{ scale }] }]}>
+    <View style={styles.exerciseShell}>
+      <PressableScale
+        style={styles.exerciseHeader}
+        disabled={!video}
+        onPress={() => video && onOpenVideo(video)}
+        accessibilityRole={video ? "button" : undefined}
+        accessibilityLabel={`${toTitleCase(ex.name)}, ${ex.sets} serije po ${ex.reps}${video ? ", otvori video" : ""}`}
+      >
         <View style={styles.exerciseNum}>
           <Text style={styles.exerciseNumText}>{idx + 1}</Text>
         </View>
@@ -227,8 +380,56 @@ function ExerciseCard({ ex, idx, video, onNavigate }) {
           </Text>
           {ex.note ? <Text style={styles.exerciseNote}>{ex.note}</Text> : null}
         </View>
-        {video && <CaretRight size={18} color={theme.textTertiary} />}
-      </Animated.View>
-    </Pressable>
+        {video && <CaretRightIcon size={18} color={theme.textTertiary} />}
+      </PressableScale>
+
+      <View style={styles.weights}>
+        <View style={styles.weightsTop}>
+          <Text style={styles.lastTime} numberOfLines={1}>
+            {last ? `${lastLabel}: ${last}` : "Kilaža po seriji"}
+          </Text>
+          <View style={styles.nudgeRow}>
+            {[-1, 1].map((dir) => (
+              <PressableScale
+                key={dir}
+                style={[styles.nudgeBtn, !hasAnyWeight && { opacity: 0.4 }]}
+                disabled={!hasAnyWeight}
+                onPress={() => onNudge(dir)}
+                accessibilityRole="button"
+                accessibilityLabel={`${dir > 0 ? "Povećaj" : "Smanji"} sve serije za ${formatWeight(WEIGHT_STEP_KG)} kilograma`}
+              >
+                <Text style={styles.nudgeText}>
+                  {dir > 0 ? "+" : "−"}
+                  {formatWeight(WEIGHT_STEP_KG)}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.setRow}>
+          {values.map((text, setIndex) => {
+            const invalid = Number.isNaN(parseWeight(text));
+            return (
+              <View key={setIndex} style={styles.setBox}>
+                <Text style={styles.setLabel}>S{setIndex + 1}</Text>
+                <TextInput
+                  style={[styles.setInput, invalid && styles.setInputInvalid]}
+                  value={text}
+                  onChangeText={(t) => onChange(setIndex, t)}
+                  keyboardType="decimal-pad"
+                  placeholder="–"
+                  placeholderTextColor={theme.textTertiary}
+                  maxLength={6}
+                  selectTextOnFocus
+                  accessibilityLabel={`Serija ${setIndex + 1}, kilogrami`}
+                />
+              </View>
+            );
+          })}
+          <Text style={styles.kgUnit}>kg</Text>
+        </View>
+      </View>
+    </View>
   );
 }

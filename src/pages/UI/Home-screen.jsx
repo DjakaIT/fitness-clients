@@ -1,12 +1,5 @@
-import React, { useRef } from "react";
-import {
-  Animated,
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import React from "react";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
@@ -24,39 +17,7 @@ import useClientMeasurements from "../../hooks/useClientMeasurements";
 import { formatDateShort } from "../../../backend/utils/appointmentConfig";
 import { makeStyles } from "../../styles/StylesHomeScreen";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
-
-function PressableScale({ onPress, style, containerStyle, children }) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = () =>
-    Animated.spring(scale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      speed: 60,
-      bounciness: 0,
-    }).start();
-
-  const pressOut = () =>
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 6,
-    }).start();
-
-  return (
-    <Pressable
-      onPressIn={pressIn}
-      onPressOut={pressOut}
-      onPress={onPress}
-      style={containerStyle}
-    >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>
-        {children}
-      </Animated.View>
-    </Pressable>
-  );
-}
+import PressableScale from "../../components/PressableScale";
 
 export default function HomeScreen() {
   const navigate = useNavigation();
@@ -113,8 +74,13 @@ export default function HomeScreen() {
             <ProfilePageComponent />
           </View>
 
-          {/* ── Hero: progress ── */}
-          <View style={styles.heroCard}>
+          {/* ── Hero: progress — opens the check-in history ── */}
+          <PressableScale
+            style={styles.heroCard}
+            onPress={() => navigate.navigate("Progress")}
+            accessibilityRole="button"
+            accessibilityLabel="Moj napredak, otvori mjere i slike"
+          >
             <View style={styles.heroHeader}>
               <Text style={styles.heroLabel}>MOJ NAPREDAK</Text>
               {currentEntry && (
@@ -131,8 +97,8 @@ export default function HomeScreen() {
               />
             ) : weightEntries.length === 0 ? (
               <Text style={styles.emptyNote}>
-                Trenerica još nije unijela tvoja mjerenja. Čim stigne prvo
-                mjerenje, ovdje pratiš svoj napredak.
+                Dodaj prvo mjerenje i slike — od tada ovdje pratiš svoj
+                napredak.
               </Text>
             ) : !hasProgress ? (
               <>
@@ -171,7 +137,7 @@ export default function HomeScreen() {
                 </View>
               </>
             )}
-          </View>
+          </PressableScale>
 
           {/* ── Primary CTA ── */}
           <PressableScale
