@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, FlatList, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import useAppointments from "../../hooks/useAppointments";
 import { formatDateLong } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminClientsScheduleScreen";
@@ -25,7 +24,6 @@ export default function AdminClientScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ProfilePageComponent />
       <View style={styles.container}>
         <Text style={styles.title}>{displayName}</Text>
         <Text style={styles.subtitle}>Nadolazeći termini</Text>

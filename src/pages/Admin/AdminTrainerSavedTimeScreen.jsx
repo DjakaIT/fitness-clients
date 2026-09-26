@@ -4,7 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
 import { useAuth } from "../../context/AuthContext";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import {
   WORK_DAYS,
   getFreeClientTimeText,
@@ -74,7 +73,6 @@ export default function AdminTrainerSavedTimeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ProfilePageComponent />
       <View style={styles.container}>
         <Text style={styles.title}>Spremljeno vrijeme</Text>
         <Text style={styles.subtitle}>

@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
 import useExerciseLogs from "../../hooks/useExerciseLogs";
@@ -43,7 +42,6 @@ export default function AdminClientProgramsScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <ProfilePageComponent />
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}

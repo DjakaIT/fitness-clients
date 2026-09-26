@@ -9,6 +9,11 @@ export const styles = StyleSheet.create({
     paddingTop: 72,
     paddingBottom: 48,
   },
+  topBar: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+  },
   greeting: {
     fontFamily: "Montserrat_800ExtraBold",
     fontSize: 32,

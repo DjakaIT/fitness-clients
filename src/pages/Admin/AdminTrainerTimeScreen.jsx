@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
 import { useAuth } from "../../context/AuthContext";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import GeneralButton from "../../components/GeneralButton";
 import ConfirmSheet from "../../components/ConfirmSheet";
 import {
@@ -135,7 +134,6 @@ export default function AdminTrainerTimeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ProfilePageComponent />
       <View style={styles.container}>
         <Text style={styles.title}>Dodaj vrijeme</Text>
         <Text style={styles.subtitle}>

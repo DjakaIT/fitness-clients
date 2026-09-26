@@ -15,7 +15,6 @@ import { useAuth } from "../../context/AuthContext";
 import { styles } from "../../styles/Admin/StylesAdminUserListScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useFetchUsers from "../../hooks/useFetchUsers";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import usePendingUsers from "../../hooks/usePendingUsers";
 import useUpdateUserStatus from "../../hooks/useUpdateUserStatus";
 
@@ -82,7 +81,6 @@ export default function AdminUserListScreen() {
   );
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ProfilePageComponent />
       <View style={styles.container}>
         <View style={styles.searchRow}>
           <SearchBar value={searchQuery} onChangeText={setSearchQuery} />

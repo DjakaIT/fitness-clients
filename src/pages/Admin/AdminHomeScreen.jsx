@@ -4,6 +4,7 @@ import GeneralButton from "../../components/GeneralButton";
 import { useNavigation } from "@react-navigation/native";
 import { styles } from "../../styles/Admin/StylesAdminHomeScreen";
 import usePendingUsers from "../../hooks/usePendingUsers";
+import ProfilePageComponent from "../../components/ProfilePageComponent";
 
 export default function AdminHomeScreen() {
   const navigation = useNavigation();
@@ -12,6 +13,12 @@ export default function AdminHomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Theme + logout: the one place in the admin section, instead of a
+          bubble repeated (and out of place) on every sub-screen. */}
+      <View style={styles.topBar}>
+        <ProfilePageComponent />
+      </View>
+
       <Text style={styles.greeting}>
         Dobrodošla nazad,{"\n"}
         <Text style={styles.name}>Marta.</Text>

@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import useFetchInPersonUsers from "../../hooks/useFetchInPersonUsers";
 import { styles } from "../../styles/Admin/StylesAdminInPersonScreen";
 import GeneralButton from "../../components/GeneralButton";
@@ -55,7 +54,6 @@ export default function AdminInPersonScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ProfilePageComponent />
       <View style={styles.container}>
         <Text style={styles.title}>Uživo klijentice</Text>
         <Text style={styles.subtitle}>

@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Image } from "expo-image";
-import ProfilePageComponent from "../../components/ProfilePageComponent";
 import PressableScale from "../../components/PressableScale";
 import useClientMeasurements from "../../hooks/useClientMeasurements";
 import { useCheckInPhotos } from "../../hooks/useCheckIn";
@@ -58,7 +57,6 @@ export default function AdminClientMeasurementsScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <ProfilePageComponent />
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
