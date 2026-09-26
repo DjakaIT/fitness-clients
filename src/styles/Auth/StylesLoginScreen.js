@@ -4,6 +4,9 @@ import { AUTH } from "../authTheme";
 const { width } = Dimensions.get("window");
 const LOGO = Math.min(width * 0.44, 180);
 
+/** Matches the Google button (16 + 22 + 16), so the two read as equals. */
+export const APPLE_BUTTON_HEIGHT = 56;
+
 export const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: AUTH.bgTop },
   safeArea: { flex: 1 },
@@ -79,6 +82,23 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
     color: "#2B1F26",
+  },
+  appleButtonWrap: {
+    width: "100%",
+    height: APPLE_BUTTON_HEIGHT,
+    marginBottom: 12,
+    borderRadius: 18,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+  },
+  appleButtonBusy: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: "#000000",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   footer: { marginTop: 26, alignItems: "center" },

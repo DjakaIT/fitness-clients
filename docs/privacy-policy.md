@@ -18,8 +18,11 @@ Kontakt za sva pitanja o privatnosti: **[e-mail]**.
 ## Koje podatke prikupljamo
 
 **Podatke o računu** — pri prijavi Google računom preuzimamo tvoje ime,
-e-mail adresu i profilnu sliku. Lozinku nikad ne vidimo niti pohranjujemo;
-prijavu obavlja Google.
+e-mail adresu i profilnu sliku. Pri prijavi Apple ID-em (na iPhoneu)
+preuzimamo samo ime i e-mail adresu — ako odabereš "Sakrij moj e-mail", Apple
+nam daje zamjensku adresu koja prosljeđuje poštu, a tvoju pravu adresu ne
+vidimo. Lozinku nikad ne vidimo niti pohranjujemo; prijavu obavlja Google
+odnosno Apple.
 
 **Podatke o treningu** — rezervirane termine, program vježbanja koji ti
 trenerica dodijeli, kilaže koje upišeš po serijama, i tjedne dojmove koje sama

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import {
   doc,
   getDoc,
@@ -11,6 +11,7 @@ import { auth, db } from "../../backend/config/firebase";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { isAdminEmail } from "../../backend/config/tenant";
 import { resetVideoStore } from "../hooks/useVideos";
+import { takePendingDisplayName } from "../hooks/auth/pendingProfile";
 
 const AuthContext = createContext(null);
 
@@ -49,6 +50,22 @@ export function AuthProvider({ children }) {
       setError(null);
       const userRef = doc(db, "users", firebaseUser.uid);
 
+      // Sign in with Apple leaves displayName null: Apple sends the name only
+      // on the first authorization, and as part of the sign-in result rather
+      // than the credential. useAppleAuth stashes it before signing in; take
+      // it on every sign-in (so it can never leak into a later one) and use
+      // it only when the account has no name of its own.
+      const pendingName = takePendingDisplayName();
+      let displayName = firebaseUser.displayName;
+      if (!displayName && pendingName) {
+        displayName = pendingName;
+        // Store it on the Auth account too, so the next session — on this
+        // device or another — has it without Apple ever sending it again.
+        updateProfile(firebaseUser, { displayName: pendingName }).catch((err) =>
+          console.warn("Could not save Apple name to profile:", err),
+        );
+      }
+
       try {
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
@@ -59,8 +76,8 @@ export function AuthProvider({ children }) {
           await setDoc(userRef, {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
+            displayName: displayName ?? null,
+            photoURL: firebaseUser.photoURL ?? null,
             role: isTrainerAccount ? "admin" : "user",
             status: isTrainerAccount ? "active" : "pending",
             trainingType: null,
@@ -69,16 +86,14 @@ export function AuthProvider({ children }) {
           });
         } else {
           // Never re-write role or status here: they are the trainer's to set,
-          // and the rules reject a client that tries.
-          await setDoc(
-            userRef,
-            {
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              lastLogin: serverTimestamp(),
-            },
-            { merge: true },
-          );
+          // and the rules reject a client that tries. Name and photo are only
+          // written when present — an Apple account has neither on every
+          // sign-in after the first, and writing null would erase the name
+          // captured that first time.
+          const refresh = { lastLogin: serverTimestamp() };
+          if (displayName) refresh.displayName = displayName;
+          if (firebaseUser.photoURL) refresh.photoURL = firebaseUser.photoURL;
+          await setDoc(userRef, refresh, { merge: true });
         }
       } catch (err) {
         console.error("Error setting up user doc:", err);

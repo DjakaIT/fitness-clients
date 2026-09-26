@@ -23,7 +23,11 @@ jest.mock("firebase/auth", () => ({
   onAuthStateChanged: jest.fn(() => jest.fn()),
   signOut: jest.fn().mockResolvedValue(undefined),
   signInWithCredential: jest.fn().mockResolvedValue({}),
+  updateProfile: jest.fn().mockResolvedValue(undefined),
   GoogleAuthProvider: { credential: jest.fn(() => ({})) },
+  OAuthProvider: jest.fn().mockImplementation(() => ({
+    credential: jest.fn(() => ({})),
+  })),
 }));
 
 jest.mock("firebase/firestore", () => ({

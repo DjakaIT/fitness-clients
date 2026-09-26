@@ -2,7 +2,7 @@
   "expo": {
     "name": "marta-fitness",
     "slug": "marta-fitness",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "scheme": "com.daniel.martafitness",
     "orientation": "portrait",
     "icon": "./assets/images/logo.jpeg",
@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.daniel.martafitness"
+      "bundleIdentifier": "com.daniel.martafitness",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.daniel.martafitness",
@@ -45,7 +46,8 @@
           "cameraPermission": "Marta Fitness treba kameru da bi mogla uslikati slike napretka.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {

@@ -9,9 +9,11 @@ const mocks = {
   getDoc: jest.fn(),
   setDoc: jest.fn().mockResolvedValue(undefined),
   signOut: jest.fn().mockResolvedValue(undefined),
+  updateProfile: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock("firebase/auth", () => ({
+  updateProfile: (...args) => mocks.updateProfile(...args),
   onAuthStateChanged: (_auth, cb) => {
     mocks.authCallback = cb;
     return jest.fn();
@@ -187,6 +189,97 @@ describe("AuthProvider — privilege handling", () => {
     await emitDoc({ role: "user" });
 
     expect(state().status).toBe("active");
+  });
+});
+
+describe("AuthProvider — Sign in with Apple", () => {
+  const {
+    setPendingDisplayName,
+    takePendingDisplayName,
+  } = require("../src/hooks/auth/pendingProfile");
+
+  afterEach(() => takePendingDisplayName());
+
+  // Apple sends the name once, on the first authorization, and Firebase
+  // leaves displayName null — without this the account would be nameless.
+  it("uses the name Apple sent on first sign-in when the account has none", async () => {
+    setPendingDisplayName("Ana Anić");
+    const firebaseUser = {
+      uid: "a1",
+      email: "abc@privaterelay.appleid.com",
+      displayName: null,
+      photoURL: null,
+    };
+
+    await emitUser(firebaseUser);
+
+    await waitFor(() => expect(mocks.setDoc).toHaveBeenCalled());
+    expect(mocks.setDoc.mock.calls[0][1]).toMatchObject({
+      displayName: "Ana Anić",
+      photoURL: null,
+      role: "user",
+      status: "pending",
+    });
+    expect(mocks.updateProfile).toHaveBeenCalledWith(firebaseUser, {
+      displayName: "Ana Anić",
+    });
+  });
+
+  // Regression: the login refresh used to write displayName and photoURL
+  // unconditionally. For an Apple account both are null on every sign-in
+  // after the first, so that erased the name captured the first time.
+  it("never overwrites a stored name or photo with null on later sign-ins", async () => {
+    mocks.getDoc.mockResolvedValue(
+      snapshot({ role: "user", status: "active", displayName: "Ana Anić" }),
+    );
+
+    await emitUser({
+      uid: "a1",
+      email: "abc@privaterelay.appleid.com",
+      displayName: null,
+      photoURL: null,
+    });
+
+    await waitFor(() => expect(mocks.setDoc).toHaveBeenCalled());
+    const written = mocks.setDoc.mock.calls[0][1];
+    expect(written).not.toHaveProperty("displayName");
+    expect(written).not.toHaveProperty("photoURL");
+    expect(written).toHaveProperty("lastLogin");
+  });
+
+  it("keeps the account's own name over a stashed one", async () => {
+    setPendingDisplayName("Stari Naziv");
+    await emitUser({
+      uid: "g1",
+      email: "client@example.com",
+      displayName: "Petra Novak",
+      photoURL: "https://x/p.jpg",
+    });
+
+    await waitFor(() => expect(mocks.setDoc).toHaveBeenCalled());
+    expect(mocks.setDoc.mock.calls[0][1].displayName).toBe("Petra Novak");
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+  });
+
+  // A stale stash must not leak into a different person's sign-in later.
+  it("consumes the stashed name even when it is not used", async () => {
+    setPendingDisplayName("Stari Naziv");
+    await emitUser({
+      uid: "g1",
+      email: "client@example.com",
+      displayName: "Petra Novak",
+    });
+    expect(takePendingDisplayName()).toBeNull();
+  });
+
+  it("does not grant admin to an Apple private-relay address", async () => {
+    await emitUser({
+      uid: "a1",
+      email: "abc@privaterelay.appleid.com",
+      displayName: null,
+    });
+    await waitFor(() => expect(mocks.setDoc).toHaveBeenCalled());
+    expect(mocks.setDoc.mock.calls[0][1].role).toBe("user");
   });
 });
 
