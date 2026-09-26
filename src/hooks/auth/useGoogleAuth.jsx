@@ -8,6 +8,11 @@ import { auth } from "../../../backend/config/firebase";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  // Only the iOS native sign-in flow reads this (Android uses webClientId
+  // alone); harmless to always pass it. Avoids needing a bundled
+  // GoogleService-Info.plist — see the "without Firebase" mode of this
+  // library's config plugin, which app.json already uses via `iosUrlScheme`.
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 });
 
 /** Failures the user can act on, separated from the ones they cannot. */
