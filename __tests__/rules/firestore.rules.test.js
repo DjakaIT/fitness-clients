@@ -22,6 +22,7 @@ const {
   getDocs,
   query,
   where,
+  runTransaction,
 } = require("firebase/firestore");
 
 const TRAINER_EMAIL = "danielrajic145@gmail.com";
@@ -647,6 +648,23 @@ describe("client check-ins", () => {
       deleteDoc(doc(clientDb("clientA"), "measurements", `clientA_${date}`)),
     );
   });
+
+  // Same class of bug as exercise_logs: a read rule built on
+  // `resource.data.userId` crashes rather than denying when the document does
+  // not exist. A client checking whether she already has a check-in for a
+  // date must not hit that crash.
+  it("lets a client read her own not-yet-existing check-in cleanly", async () => {
+    const snap = await getDoc(
+      doc(clientDb("clientA"), "measurements", "clientA_2099-01-01"),
+    );
+    expect(snap.exists()).toBe(false);
+  });
+
+  it("still refuses another client's not-yet-existing check-in", async () => {
+    await assertFails(
+      getDoc(doc(clientDb("clientB"), "measurements", "clientA_2099-01-01")),
+    );
+  });
 });
 
 describe("progress photos", () => {
@@ -787,6 +805,13 @@ describe("progress photos", () => {
       );
     });
   });
+
+  it("lets a client read her own not-yet-existing photo cleanly", async () => {
+    const snap = await getDoc(
+      doc(clientDb("clientA"), "progress_photos", id("clientA", "back")),
+    );
+    expect(snap.exists()).toBe(false);
+  });
 });
 
 describe("exercise logs", () => {
@@ -866,6 +891,35 @@ describe("exercise logs", () => {
         log("pendingC"),
       ),
     );
+  });
+
+  // Regression: logging a set for an exercise for the first time reads its
+  // (not yet existing) document before writing it — inside a transaction,
+  // exactly as MyWorkoutsScreen does. A read rule written as
+  // `isOwner(resource.data.userId)` looks right but crashes on a null
+  // `resource`, which Firestore reports to the client as a bare permission
+  // error with no indication it was actually a rule evaluation crash.
+  it("lets a client read her own not-yet-existing log without the read rule crashing", async () => {
+    const db = clientDb("clientA");
+    const ref = doc(db, "exercise_logs", "clientA_99");
+
+    await assertSucceeds(
+      runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) {
+          tx.set(ref, log("clientA", "99"));
+        }
+      }),
+    );
+
+    const saved = await getDoc(ref);
+    expect(saved.exists()).toBe(true);
+  });
+
+  it("still refuses reading another client's not-yet-existing log the same way", async () => {
+    const db = clientDb("clientB");
+    const ref = doc(db, "exercise_logs", "clientA_99");
+    await assertFails(runTransaction(db, (tx) => tx.get(ref)));
   });
 });
 

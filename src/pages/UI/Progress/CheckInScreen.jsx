@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -40,8 +40,11 @@ import {
 } from "../../../../backend/utils/appointmentSchemas";
 import { makeStyles } from "../../../styles/UI/StylesProgress";
 
+// Falls back to today rather than crashing the screen if `dateStr` is ever
+// malformed — e.g. a measurement doc whose `date` field was hand-edited in
+// the console — since this runs from a tap with no other error handling.
 const shiftDate = (dateStr, delta) => {
-  const d = parseLocalDate(dateStr);
+  const d = parseLocalDate(dateStr) ?? new Date();
   d.setDate(d.getDate() + delta);
   return toLocalDateString(d);
 };
@@ -64,6 +67,10 @@ export default function CheckInScreen({ route, navigation }) {
   const [editedPhotos, setEditedPhotos] = useState(null);
   const [busyAngle, setBusyAngle] = useState(null);
   const [formError, setFormError] = useState(null);
+  // Chains the measurement fields: finishing one (keyboard next/done) moves
+  // to the following one — kilaža → struk → bokovi → grudi → ruke.
+  const fieldRefs = useRef([]);
+  const focusField = (index) => fieldRefs.current[index]?.focus();
   const [deleting, setDeleting] = useState(false);
 
   const { measurements } = useClientMeasurements(user?.uid);
@@ -233,12 +240,15 @@ export default function CheckInScreen({ route, navigation }) {
 
             <Text style={styles.sectionLabel}>Mjere</Text>
             <View style={styles.fieldGrid}>
-              {MEASUREMENT_FIELDS.map((f) => (
+              {MEASUREMENT_FIELDS.map((f, i) => (
                 <View key={f.key} style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>
                     {f.label} <Text style={styles.fieldUnit}>({f.unit})</Text>
                   </Text>
                   <TextInput
+                    ref={(el) => {
+                      fieldRefs.current[i] = el;
+                    }}
                     style={styles.fieldInput}
                     value={values[f.key]}
                     onChangeText={(t) => setField(f.key, t)}
@@ -246,6 +256,11 @@ export default function CheckInScreen({ route, navigation }) {
                     placeholder="–"
                     placeholderTextColor={theme.textTertiary}
                     maxLength={6}
+                    returnKeyType={
+                      i === MEASUREMENT_FIELDS.length - 1 ? "done" : "next"
+                    }
+                    blurOnSubmit={i === MEASUREMENT_FIELDS.length - 1}
+                    onSubmitEditing={() => focusField(i + 1)}
                     accessibilityLabel={`${f.label} u ${f.unit}`}
                   />
                 </View>

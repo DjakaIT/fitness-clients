@@ -189,13 +189,41 @@ service cloud.firestore {
         || (data[field] is string && data[field].size() <= 8);
     }
 
+    // Whether `id` is prefixed "<uid>_" — true regardless of whether the
+    // document exists.
+    //
+    // A read rule that instead says `isOwner(resource.data.userId)` looks
+    // right, but `resource` is null when the document does not exist yet, and
+    // `resource.data` on null does not evaluate to false — it aborts rule
+    // evaluation, which Firestore reports to the client as a bare permission
+    // error. That bites exactly the read-before-write these collections do:
+    // logging a set for an exercise for the first time reads its (not yet
+    // existing) document before writing it. Since every id here already
+    // encodes its owner, ownership can be read off the id itself, which needs
+    // no document to exist.
+    function idBelongsToCaller(id) {
+      return isSignedIn()
+        && id.size() > request.auth.uid.size()
+        && id[0:request.auth.uid.size()] == request.auth.uid
+        && id[request.auth.uid.size():request.auth.uid.size() + 1] == '_';
+    }
+
     // ─── Measurements (client check-ins) ────────────────────────────────────
     // Body data. The client enters her own — the trainer cannot measure an
     // online client — and the trainer reads it. Id pinned to "<uid>_<date>",
     // so one entry per day and nobody can write under someone else's uid.
 
     match /measurements/{docId} {
-      allow read: if isTrainer() || isOwner(resource.data.userId);
+      // Split, deliberately, from a single `allow read`. A get (including the
+      // "does this date already have an entry?" check before a create) can
+      // rely on idBelongsToCaller, since the id is known whether or not the
+      // document exists. A list (the query useClientMeasurements runs) only
+      // ever returns existing documents, but Firestore has to prove the rule
+      // holds for the whole query using its where-clauses alone — it cannot
+      // look inside a result's id to do that, so a list needs the ownership
+      // check on the document's data instead.
+      allow get: if isTrainer() || idBelongsToCaller(docId);
+      allow list: if isTrainer() || resource.data.userId == request.auth.uid;
 
       allow create, update: if isActiveClient()
         && isOwner(request.resource.data.userId)
@@ -211,7 +239,7 @@ service cloud.firestore {
                 && request.resource.data.photoAngles.size() <= 4))
         && (resource == null || resource.data.userId == request.auth.uid);
 
-      allow delete: if isTrainer() || isOwner(resource.data.userId);
+      allow delete: if isTrainer() || idBelongsToCaller(docId);
     }
 
     // ─── Progress photos ────────────────────────────────────────────────────
@@ -221,7 +249,10 @@ service cloud.firestore {
     // trusting the client. Content must be a JPEG under the size cap.
 
     match /progress_photos/{photoId} {
-      allow read: if isTrainer() || isOwner(resource.data.userId);
+      // Same get/list split as measurements, for the same reason: useCheckInPhotos
+      // queries by userId + date.
+      allow get: if isTrainer() || idBelongsToCaller(photoId);
+      allow list: if isTrainer() || resource.data.userId == request.auth.uid;
 
       allow create, update: if isActiveClient()
         && isOwner(request.resource.data.userId)
@@ -236,7 +267,7 @@ service cloud.firestore {
         && request.resource.data.data[0:4] == '/9j/'
         && (resource == null || resource.data.userId == request.auth.uid);
 
-      allow delete: if isTrainer() || isOwner(resource.data.userId);
+      allow delete: if isTrainer() || idBelongsToCaller(photoId);
     }
 
     // ─── Exercise logs (weights the client lifted) ──────────────────────────
@@ -244,7 +275,12 @@ service cloud.firestore {
     // planning the next one. Id pinned to "<uid>_<exerciseId>".
 
     match /exercise_logs/{logId} {
-      allow read: if isTrainer() || isOwner(resource.data.userId);
+      // Same get/list split as measurements. get must tolerate a not-yet-
+      // existing document: the save transaction reads it first (to fold in
+      // history) before the first log for an exercise is ever written. list
+      // is what useExerciseLogs queries with.
+      allow get: if isTrainer() || idBelongsToCaller(logId);
+      allow list: if isTrainer() || resource.data.userId == request.auth.uid;
 
       allow create, update: if isActiveClient()
         && isOwner(request.resource.data.userId)
@@ -259,7 +295,7 @@ service cloud.firestore {
                 && request.resource.data.exerciseName.size() <= 120))
         && (resource == null || resource.data.userId == request.auth.uid);
 
-      allow delete: if isTrainer() || isOwner(resource.data.userId);
+      allow delete: if isTrainer() || idBelongsToCaller(logId);
     }
 
     // ─── Workout programs ───────────────────────────────────────────────────

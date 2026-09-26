@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -361,6 +361,12 @@ function ExerciseCard({
   const lastLabel = isThisSession(log) ? "Upisano" : "Zadnji put";
   const hasAnyWeight = values.some((v) => typeof parseWeight(v) === "number");
 
+  // Chains the sets: finishing one (via the keyboard's next/done key) moves to
+  // the following one, so a whole exercise can be logged without reaching for
+  // the screen between sets.
+  const inputRefs = useRef([]);
+  const focusSet = (setIndex) => inputRefs.current[setIndex]?.focus();
+
   return (
     <View style={styles.exerciseShell}>
       <PressableScale
@@ -414,6 +420,9 @@ function ExerciseCard({
               <View key={setIndex} style={styles.setBox}>
                 <Text style={styles.setLabel}>S{setIndex + 1}</Text>
                 <TextInput
+                  ref={(el) => {
+                    inputRefs.current[setIndex] = el;
+                  }}
                   style={[styles.setInput, invalid && styles.setInputInvalid]}
                   value={text}
                   onChangeText={(t) => onChange(setIndex, t)}
@@ -422,6 +431,11 @@ function ExerciseCard({
                   placeholderTextColor={theme.textTertiary}
                   maxLength={6}
                   selectTextOnFocus
+                  returnKeyType={
+                    setIndex === values.length - 1 ? "done" : "next"
+                  }
+                  blurOnSubmit={setIndex === values.length - 1}
+                  onSubmitEditing={() => focusSet(setIndex + 1)}
                   accessibilityLabel={`Serija ${setIndex + 1}, kilogrami`}
                 />
               </View>
