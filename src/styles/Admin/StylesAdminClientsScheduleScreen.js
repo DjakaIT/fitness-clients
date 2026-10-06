@@ -34,6 +34,18 @@ export const styles = StyleSheet.create({
   },
   dateText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#7C3AED" },
   time: { fontSize: 18, fontFamily: "Outfit_700Bold", color: "#111827" },
+  cancelBtn: {
+    marginLeft: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 68, 68, 0.10)",
+  },
+  cancelBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#DC2626",
+  },
   empty: {
     marginTop: 40,
     padding: 24,

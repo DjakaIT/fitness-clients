@@ -24,9 +24,16 @@ export function AuthProvider({ children }) {
   const [trainingType, setTrainingType] = useState(null); // "online" | "in_person" | null
   const [error, setError] = useState(null);
   const unsubscribeSnapshotRef = useRef(null);
+  // Bumped on every auth change. The profile setup below awaits the network;
+  // if the user signs out (or switches account) meanwhile, the older run must
+  // not go on to attach a listener for the account that is gone.
+  const authGenerationRef = useRef(0);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      const generation = ++authGenerationRef.current;
+      const isStale = () => generation !== authGenerationRef.current;
+
       // Tear down any previous doc listener
       if (unsubscribeSnapshotRef.current) {
         unsubscribeSnapshotRef.current();
@@ -68,6 +75,7 @@ export function AuthProvider({ children }) {
 
       try {
         const userSnap = await getDoc(userRef);
+        if (isStale()) return;
         if (!userSnap.exists()) {
           // First sign-in. The trainer's own account bootstraps as an approved
           // admin; everyone else starts pending. Firestore rules enforce this
@@ -96,11 +104,14 @@ export function AuthProvider({ children }) {
           await setDoc(userRef, refresh, { merge: true });
         }
       } catch (err) {
+        if (isStale()) return;
         console.error("Error setting up user doc:", err);
         setError("profile-setup-failed");
         setLoading(false);
         return;
       }
+
+      if (isStale()) return;
 
       // Real-time listener — fires immediately with current data, then on every change
       unsubscribeSnapshotRef.current = onSnapshot(
@@ -108,7 +119,11 @@ export function AuthProvider({ children }) {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data();
-            setStatus(data.status ?? "active"); // legacy users (no status field) treated as active
+            // Fail closed: a document without a status has not been approved
+            // as far as firestore.rules is concerned (they test for "active"
+            // exactly), so treating it as active here would only open a
+            // broken app full of permission errors.
+            setStatus(data.status ?? "pending");
             setTrainingType(data.trainingType ?? null);
             // Authority for "is this the trainer" is the stored role, which only
             // the trainer can write. The e-mail is used for bootstrap only.

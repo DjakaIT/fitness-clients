@@ -124,6 +124,12 @@ export const makeStyles = (t) =>
       color: t.danger,
       fontFamily: "Inter_600SemiBold",
     },
+    slotLockedText: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: t.textTertiary,
+      marginTop: 4,
+    },
 
     // ── Counter ──
     counterRow: {

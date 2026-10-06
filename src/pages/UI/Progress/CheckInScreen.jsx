@@ -73,12 +73,17 @@ export default function CheckInScreen({ route, navigation }) {
   const focusField = (index) => fieldRefs.current[index]?.focus();
   const [deleting, setDeleting] = useState(false);
 
-  const { measurements } = useClientMeasurements(user?.uid);
+  const {
+    measurements,
+    loading: measurementsLoading,
+    error: measurementsError,
+  } = useClientMeasurements(user?.uid);
   const saved = measurements.find((m) => m.date === date);
-  const { photos: savedPhotos, loading: photosLoading } = useCheckInPhotos(
-    user?.uid,
-    date,
-  );
+  const {
+    photos: savedPhotos,
+    loading: photosLoading,
+    error: photosError,
+  } = useCheckInPhotos(user?.uid, date);
   const { saveCheckIn, isSaving } = useSaveCheckIn();
 
   // Moving to another date shows that date's entry; unsaved edits for the
@@ -93,8 +98,19 @@ export default function CheckInScreen({ route, navigation }) {
   const photos = editedPhotos ?? savedPhotos;
   const photoCount = Object.values(photos).filter(Boolean).length;
   const dirty = editedValues !== null || editedPhotos !== null;
+  // Saving rewrites the whole entry from what is on screen. Before the saved
+  // entry and its photos have loaded — or if loading failed — the screen
+  // shows blanks, and a save would overwrite the stored values with them.
+  const entryReady =
+    !measurementsLoading &&
+    !measurementsError &&
+    !photosLoading &&
+    !photosError;
   const canSave =
-    dirty && (hasAnyMeasurement(values) || photoCount > 0) && !isSaving;
+    dirty &&
+    entryReady &&
+    (hasAnyMeasurement(values) || photoCount > 0) &&
+    !isSaving;
 
   const setField = (key, text) => {
     setFormError(null);
@@ -164,12 +180,13 @@ export default function CheckInScreen({ route, navigation }) {
     try {
       const batch = writeBatch(db);
       batch.delete(doc(db, "measurements", measurementDocId(user.uid, date)));
+      // Every angle, not just the ones that loaded: if the photos failed to
+      // load, deleting only those would leave her photos behind after she
+      // was told the entry is gone. Deleting a missing document is a no-op.
       for (const angle of PHOTO_ANGLES) {
-        if (savedPhotos[angle.key]) {
-          batch.delete(
-            doc(db, "progress_photos", photoDocId(user.uid, date, angle.key)),
-          );
-        }
+        batch.delete(
+          doc(db, "progress_photos", photoDocId(user.uid, date, angle.key)),
+        );
       }
       await batch.commit();
       navigation.goBack();
@@ -252,6 +269,9 @@ export default function CheckInScreen({ route, navigation }) {
                     style={styles.fieldInput}
                     value={values[f.key]}
                     onChangeText={(t) => setField(f.key, t)}
+                    // Typing over blanks that have not loaded yet would
+                    // become an edit of the real entry.
+                    editable={!measurementsLoading && !measurementsError}
                     keyboardType="decimal-pad"
                     placeholder="–"
                     placeholderTextColor={theme.textTertiary}
@@ -274,6 +294,11 @@ export default function CheckInScreen({ route, navigation }) {
                 color={theme.accent}
                 style={{ marginVertical: 24 }}
               />
+            ) : photosError ? (
+              <Text style={styles.formNote} accessibilityRole="alert">
+                Slike se nisu učitale, pa se unos ne može spremiti bez rizika da
+                ih izgubiš. Provjeri vezu i otvori unos ponovo.
+              </Text>
             ) : (
               <View style={styles.photoGrid}>
                 {PHOTO_ANGLES.map((angle) => (

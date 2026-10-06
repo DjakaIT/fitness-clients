@@ -209,25 +209,41 @@ who can see only their own data.
   `trainerEmails()` inside `firestore.rules`. The app mirrors that list via
   `EXPO_PUBLIC_ADMIN_EMAIL`, but the client-side copy only chooses which screens
   to render — it grants nothing.
-- **`role` and `status` are not client-writable.** A client's own update is
-  rejected if it changes either field, so nobody can self-approve out of the
-  waiting room or promote themselves to admin. `AuthContext` never re-writes
-  them on login for the same reason.
+- **`role` and `status` are not client-writable.** A client's own update may
+  touch only `displayName`, `photoURL`, `lastLogin` (server time) and — while
+  her request is pending, or once if she never picked one — `trainingType`. So
+  nobody can self-approve out of the waiting room, promote themselves to
+  admin, or switch from online to in-person after approval. `AuthContext`
+  never re-writes role or status on login for the same reason, and treats a
+  profile with no `status` as not approved.
+- **Only in-person clients touch the calendar.** Booking, claiming a released
+  slot and reading the week all require an approved client whose
+  `trainingType` is `in_person`. A booking must be for a real clock time,
+  start in the future and lie within the coming ~2 weeks; it may carry the
+  booking fields and nothing else.
 - **Appointments carry no personal data.** They store an opaque `userId` and
   nothing else; the trainer joins against `users` for names. Clients need to
   read the week to see what is free, and this keeps that read from exposing who
   booked what.
 - **Private collections stay private.** Weekly reviews, measurements, progress
   photos and exercise logs are readable by their owner and the trainer only,
-  and writable only by their owner — under an id pinned to her own uid.
+  and writable only by their owner — under an id pinned to her own uid. Every
+  one of them accepts a fixed set of fields; a weekly review must rate all
+  three categories with whole stars 1–5, carry at most 2000 characters of
+  reflection, and is dated by the server.
+- **Not enforced by the rules:** the 2–4 sessions per week and one per day.
+  Rules cannot count documents; the app enforces both, and the trainer sees
+  every booking. A tampered approved client could over-book, but only from
+  an account the trainer approved and can reject.
 - **Default deny.** Any path not matched explicitly is denied.
 
 ### Cancellation deadline
 
 A client may cancel up to 24h before the session starts; after that only the
 trainer can. That rule is enforced in three places: the sheet greys the button
-out, `cancelAppointmentInTransaction` re-checks it against the stored document,
-and `firestore.rules` refuses the write outright.
+out (and the weekly booking screen locks such a slot), `cancelAppointmentInTransaction`
+and `syncWeekInTransaction` re-check it against the stored document, and
+`firestore.rules` refuses the write outright.
 
 The rules copy rebuilds the slot start from its two string fields with
 `timestamp.date()`, which is UTC while the app books in local time. For a
@@ -239,7 +255,7 @@ backstop against a tampered client.
 ### Working on the rules
 
 ```bash
-npm run rules:test     # 60 tests against the Firestore emulator (needs Java)
+npm run rules:test     # 87 tests against the Firestore emulator (needs Java)
 npm run rules:diff     # show the LIVE rules and what they cover vs. this file
 npm run rules:deploy   # firebase deploy --only firestore:rules
 ```

@@ -11,6 +11,8 @@ const MONDAY = "2025-03-17";
 const TUESDAY = "2025-03-18";
 const WEDNESDAY = "2025-03-19";
 const TS = () => "SERVER_TS";
+/** The week before — every slot above is still days away. */
+const WEEK_BEFORE = new Date(2025, 2, 10, 12, 0).getTime();
 
 /**
  * Minimal stand-in for a Firestore transaction backed by a plain object store.
@@ -97,6 +99,7 @@ describe("syncWeekInTransaction", () => {
       userId: "me",
       desired: [{ date: TUESDAY, time: "10:00" }],
       existing: [{ date: MONDAY, time: "09:00" }],
+      now: WEEK_BEFORE,
       timestamp: TS,
     });
 
@@ -191,6 +194,7 @@ describe("syncWeekInTransaction", () => {
         { date: MONDAY, time: "09:00" },
         { date: TUESDAY, time: "10:00" },
       ],
+      now: WEEK_BEFORE,
       timestamp: TS,
     });
 
@@ -270,6 +274,77 @@ describe("syncWeekInTransaction", () => {
     });
 
     expect(f.store[id]).toMatchObject({ userId: "me", status: "active" });
+  });
+
+  // Dropping a slot from the week is a cancellation. Regression: the sync
+  // skipped the 24h check, the rules then refused the whole transaction, and
+  // the client was told to check her connection.
+  it("refuses dropping a slot that starts within the cancellation cutoff", async () => {
+    const id = slotDocId(MONDAY, "09:00");
+    const f = makeFakeTx({ [id]: activeDoc("me", MONDAY, "09:00") });
+    const sundayEvening = new Date(2025, 2, 16, 20, 0).getTime();
+
+    await expect(
+      syncWeekInTransaction({
+        tx: f.tx,
+        slotRef: f.slotRef,
+        userId: "me",
+        desired: [
+          { date: TUESDAY, time: "10:00" },
+          { date: WEDNESDAY, time: "12:00" },
+        ],
+        existing: [{ date: MONDAY, time: "09:00" }],
+        now: sundayEvening,
+        timestamp: TS,
+      }),
+    ).rejects.toMatchObject({
+      code: "too-late",
+      slot: { date: MONDAY, time: "09:00" },
+    });
+
+    // All or nothing: the new slots were not taken either.
+    expect(f.calls.some(([op]) => op === "set" || op === "update")).toBe(false);
+    expect(f.store[id].status).toBe("active");
+  });
+
+  it("still lets a client add slots while keeping one inside the cutoff", async () => {
+    const id = slotDocId(MONDAY, "09:00");
+    const f = makeFakeTx({ [id]: activeDoc("me", MONDAY, "09:00") });
+
+    await syncWeekInTransaction({
+      tx: f.tx,
+      slotRef: f.slotRef,
+      userId: "me",
+      desired: [
+        { date: MONDAY, time: "09:00" },
+        { date: TUESDAY, time: "10:00" },
+      ],
+      existing: [{ date: MONDAY, time: "09:00" }],
+      now: new Date(2025, 2, 16, 20, 0).getTime(),
+      timestamp: TS,
+    });
+
+    expect(f.store[slotDocId(TUESDAY, "10:00")].status).toBe("active");
+    expect(f.store[id].status).toBe("active");
+  });
+
+  // A stale "existing" entry for a slot that is no longer hers is skipped,
+  // not treated as a late cancellation.
+  it("does not apply the cutoff to a slot the client no longer holds", async () => {
+    const id = slotDocId(MONDAY, "09:00");
+    const f = makeFakeTx({ [id]: activeDoc("other", MONDAY, "09:00") });
+
+    await expect(
+      syncWeekInTransaction({
+        tx: f.tx,
+        slotRef: f.slotRef,
+        userId: "me",
+        desired: [],
+        existing: [{ date: MONDAY, time: "09:00" }],
+        now: new Date(2025, 2, 17, 8, 0).getTime(),
+        timestamp: TS,
+      }),
+    ).resolves.toBeTruthy();
   });
 
   it("handles an empty submission without writing anything", async () => {

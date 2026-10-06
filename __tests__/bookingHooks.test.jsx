@@ -68,6 +68,24 @@ describe("useSyncAppointments", () => {
     expect(outcome.error).toContain("Pon");
   });
 
+  it("explains a dropped slot that is too close to cancel, naming it", async () => {
+    mockRunTransaction.mockRejectedValue(
+      new TooLateToCancelError({ date: "2025-03-17", time: "09:00" }),
+    );
+    const { result } = renderHook(() => useSyncAppointments());
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.syncWeek("me", slots, []);
+    });
+
+    expect(outcome.success).toBe(false);
+    expect(outcome.code).toBe("too-late");
+    expect(outcome.error).toContain("09:00");
+    expect(outcome.error).toContain("24 sata");
+    expect(outcome.error).not.toContain("vezu");
+  });
+
   it("returns a generic, non-technical message for any other failure", async () => {
     mockRunTransaction.mockRejectedValue(new Error("network down"));
     const { result } = renderHook(() => useSyncAppointments());

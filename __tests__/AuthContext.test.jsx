@@ -183,12 +183,15 @@ describe("AuthProvider — privilege handling", () => {
     expect(state().trainingType).toBe("in_person");
   });
 
-  it("treats a legacy document with no status field as active", async () => {
+  // Regression: a missing status used to map to "active", while the rules
+  // test for "active" exactly — the client landed in an app that could not
+  // read anything. Missing now means not approved.
+  it("treats a document with no status field as not yet approved", async () => {
     mocks.getDoc.mockResolvedValue(snapshot({ role: "user" }));
     await emitUser({ uid: "u1", email: "client@example.com" });
     await emitDoc({ role: "user" });
 
-    expect(state().status).toBe("active");
+    expect(state().status).toBe("pending");
   });
 });
 
@@ -308,6 +311,33 @@ describe("AuthProvider — failure handling", () => {
 
     expect(state().loading).toBe(false);
     expect(state().error).toBe("profile-unavailable");
+  });
+
+  // A sign-out (or account switch) that lands while the profile is still being
+  // fetched must win: the older run may not attach a listener afterwards.
+  it("does not resurrect a session that signed out mid-setup", async () => {
+    let resolveGetDoc;
+    mocks.getDoc.mockReturnValue(
+      new Promise((resolve) => {
+        resolveGetDoc = resolve;
+      }),
+    );
+
+    let firstRun;
+    await act(async () => {
+      firstRun = mocks.authCallback({ uid: "u1", email: "client@example.com" });
+    });
+    await emitUser(null);
+    mocks.snapshotCallback = null;
+
+    await act(async () => {
+      resolveGetDoc(snapshot({ role: "user", status: "active" }));
+      await firstRun;
+    });
+
+    expect(mocks.snapshotCallback).toBeNull();
+    expect(mocks.setDoc).not.toHaveBeenCalled();
+    expect(state()).toMatchObject({ isAuthenticated: false, loading: false });
   });
 
   it("clears every privilege flag on sign-out", async () => {

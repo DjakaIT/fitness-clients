@@ -69,6 +69,16 @@ describe("RootNavigator", () => {
     },
   );
 
+  // An approved client with no type would otherwise land in the online tabs
+  // while appearing in neither of the trainer's (type-split) client lists.
+  it.each([null, undefined, "vip"])(
+    "asks an approved client with training type %p to pick one first",
+    (t) => {
+      show({ status: "active", trainingType: t });
+      expect(screen.getByText("WAITING")).toBeTruthy();
+    },
+  );
+
   it("shows the spinner while the session is still resolving", () => {
     show({ loading: true });
     expect(screen.queryByText("TABS")).toBeNull();

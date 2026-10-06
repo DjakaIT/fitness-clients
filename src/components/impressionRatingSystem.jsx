@@ -16,6 +16,10 @@ const ImpressionsRatingSystem = ({ rating, setRating }) => {
             key={star}
             onPress={() => setRating(star)}
             activeOpacity={0.7}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={`${star} od 5`}
+            accessibilityState={{ selected: star === rating }}
           >
             <Star
               size={28}
@@ -26,7 +30,7 @@ const ImpressionsRatingSystem = ({ rating, setRating }) => {
         ))}
       </View>
       <Text style={[styles.ratingText, { color: activeColor }]}>
-        {rating}/5
+        {rating > 0 ? rating : "–"}/5
       </Text>
     </View>
   );

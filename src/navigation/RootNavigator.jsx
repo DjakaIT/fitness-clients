@@ -28,6 +28,14 @@ export default function RootNavigator() {
   // which also test for "active" exactly.
   if (status !== "active") return <WaitingRoomScreen />;
 
+  // Approved without ever picking a training type (approved before choosing,
+  // or an older account): the waiting room asks for it, once. Defaulting to
+  // the online tabs instead would leave her in neither of the trainer's
+  // client lists, which are split by type.
+  if (trainingType !== "in_person" && trainingType !== "online") {
+    return <WaitingRoomScreen />;
+  }
+
   if (trainingType === "in_person") return <InPersonNavigator />;
   return <TabNavigator />;
 }

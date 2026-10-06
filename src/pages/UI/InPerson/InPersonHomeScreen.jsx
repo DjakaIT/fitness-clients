@@ -25,7 +25,11 @@ export default function InPersonHomeScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { appointments, loading } = useAppointments(user?.uid);
+  const {
+    appointments,
+    loading,
+    error: appointmentsError,
+  } = useAppointments(user?.uid);
   const { cancelAppointment, isCancelling } = useCancelAppointment();
 
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -84,6 +88,15 @@ export default function InPersonHomeScreen() {
 
           {loading ? (
             <ActivityIndicator color={theme.accent} style={{ marginTop: 20 }} />
+          ) : appointmentsError ? (
+            // Not "no appointments": she may well have some, and telling her
+            // otherwise could make her book a second set.
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                Termini se nisu učitali. Provjeri vezu i otvori aplikaciju
+                ponovo.
+              </Text>
+            </View>
           ) : appointments.length === 0 ? (
             <View style={styles.emptyState}>
               <CalendarBlank

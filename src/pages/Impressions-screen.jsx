@@ -21,6 +21,11 @@ import ProfilePageComponent from "../components/ProfilePageComponent";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { usePostReviews } from "../hooks/usePostReviews";
+import { isCompleteRatings } from "../../backend/utils/reviews";
+
+// Unrated until she taps a star. Pre-filled stars (this used to start at
+// 3/4/5) were sent as her opinion whenever she skipped a category.
+const UNRATED = { training: 0, eating: 0, communication: 0 };
 
 // Original (light) palette left untouched; dark aligns to the coral theme.
 const palette = (isDark, t) =>
@@ -48,11 +53,7 @@ const palette = (isDark, t) =>
       };
 
 const ImpressionsScreen = ({ navigation }) => {
-  const [ratings, setRatings] = useState({
-    training: 3,
-    eating: 4,
-    communication: 5,
-  });
+  const [ratings, setRatings] = useState(UNRATED);
   const [reflection, setReflection] = useState("");
   const { user } = useAuth();
   const { isDark, theme } = useTheme();
@@ -63,7 +64,10 @@ const ImpressionsScreen = ({ navigation }) => {
 
   const firstName = user?.displayName?.split(" ")[0] || "Draga";
 
+  const allRated = isCompleteRatings(ratings);
+
   const handleSubmitting = async () => {
+    if (!allRated || isSubmitting) return;
     const response = await submitReview(
       user.uid,
       user.displayName,
@@ -73,7 +77,7 @@ const ImpressionsScreen = ({ navigation }) => {
 
     if (response.success) {
       navigation.goBack();
-      setRatings({ training: 0, eating: 0, communication: 0 });
+      setRatings(UNRATED);
       setReflection("");
     } else {
       Alert.alert("Greška", "Došlo je do problema prilikom slanja dojma.");
@@ -134,10 +138,21 @@ const ImpressionsScreen = ({ navigation }) => {
 
           <ImpressionsBox value={reflection} onChangeText={setReflection} />
 
+          {!allRated && (
+            <Text style={styles.hint}>
+              Ocijeni sve tri kategorije da možeš poslati dojam.
+            </Text>
+          )}
+
           <TouchableOpacity
-            style={[styles.submitBtn, isSubmitting && { opacity: 0.6 }]}
+            style={[
+              styles.submitBtn,
+              (isSubmitting || !allRated) && { opacity: 0.6 },
+            ]}
             onPress={handleSubmitting}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !allRated}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isSubmitting || !allRated }}
           >
             <PaperPlaneTilt
               color={P.onAccent}
@@ -174,6 +189,7 @@ const makeStyles = (P) =>
       marginTop: -2,
     },
     subMessage: { fontSize: 15, color: P.sub, marginTop: 10 },
+    hint: { fontSize: 13, color: P.sub, textAlign: "center", marginBottom: 4 },
     submitBtn: {
       backgroundColor: P.accent,
       flexDirection: "row",

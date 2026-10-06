@@ -7,25 +7,35 @@ import { useAuth } from "../../context/AuthContext";
 import { styles } from "../../styles/Auth/StylesWaitingRoomScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const TRAINING_TYPES = ["online", "in_person"];
+
 export default function WaitingRoomScreen() {
   const { user, status, trainingType, logout } = useAuth();
   const [selecting, setSelecting] = useState(false);
+  const [selectError, setSelectError] = useState(null);
 
   const handleSelectTrainingType = async (type) => {
     if (!user?.uid) return;
     setSelecting(true);
+    setSelectError(null);
     try {
       await updateDoc(doc(db, "users", user.uid), { trainingType: type });
       // trainingType state updates automatically via onSnapshot in AuthContext
     } catch (e) {
       console.error(e);
+      setSelectError("Odabir nije spremljen. Provjeri vezu i pokušaj ponovo.");
     } finally {
       setSelecting(false);
     }
   };
 
   const isRejected = status === "rejected";
-  const needsTrainingType = !isRejected && trainingType === null;
+  const needsTrainingType =
+    !isRejected && !TRAINING_TYPES.includes(trainingType);
+  // The rules keep the type open only while the request is pending, so the
+  // option to correct a wrong pick is offered exactly then.
+  const canChangeType = status === "pending" && !needsTrainingType;
+  const otherType = trainingType === "online" ? "in_person" : "online";
   const firstName = user?.displayName?.split(" ")[0] ?? "";
 
   return (
@@ -83,10 +93,30 @@ export default function WaitingRoomScreen() {
                   {trainingType === "online" ? "Online" : "Osobno"}
                 </Text>
               </Text>
+              {canChangeType && (
+                <Pressable
+                  style={styles.changeTypeBtn}
+                  onPress={() => handleSelectTrainingType(otherType)}
+                  disabled={selecting}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.changeTypeText}>
+                    {otherType === "online"
+                      ? "Promijeni u online"
+                      : "Promijeni u osobno"}
+                  </Text>
+                </Pressable>
+              )}
               <View style={styles.spinnerWrap}>
                 <ActivityIndicator size="large" color="#F497BA" />
               </View>
             </>
+          )}
+
+          {!!selectError && (
+            <Text style={styles.errorText} accessibilityRole="alert">
+              {selectError}
+            </Text>
           )}
 
           <Pressable style={styles.logoutBtn} onPress={logout}>

@@ -24,21 +24,17 @@ import {
  * Returns { photos: { front: base64, ... }, loading, error }.
  */
 export function useCheckInPhotos(userId, date) {
-  const [photos, setPhotos] = useState({});
-  const [loading, setLoading] = useState(Boolean(userId && date));
-  const [error, setError] = useState(null);
+  const key = userId && date ? `${userId}|${date}` : null;
+  // The result remembers which check-in it belongs to. Until the load for the
+  // current one lands, the hook reports loading — never the previous date's
+  // photos, which a save could otherwise write under the new date.
+  const [result, setResult] = useState({ key: null, photos: {}, error: null });
 
   useEffect(() => {
     let active = true;
-    if (!userId || !date) {
-      setPhotos({});
-      setLoading(false);
-      return undefined;
-    }
-    setLoading(true);
-    // A query, not four getDoc calls: reading a photo that does not exist
-    // would be refused by the rules (they check the stored owner), whereas a
-    // query simply returns fewer documents.
+    if (!key) return undefined;
+    // A query, not four getDoc calls: a list returns only what exists, so
+    // there is nothing to special-case for an angle with no photo.
     getDocs(
       query(
         collection(db, "progress_photos"),
@@ -53,22 +49,20 @@ export function useCheckInPhotos(userId, date) {
           const { angle, data } = d.data();
           if (angle && data) next[angle] = data;
         });
-        setPhotos(next);
-        setLoading(false);
+        setResult({ key, photos: next, error: null });
       })
       .catch((err) => {
         console.error("Error loading check-in photos:", err);
-        if (active) {
-          setError(err);
-          setLoading(false);
-        }
+        if (active) setResult({ key, photos: {}, error: err });
       });
     return () => {
       active = false;
     };
-  }, [userId, date]);
+  }, [key, userId, date]);
 
-  return { photos, loading, error };
+  if (!key) return { photos: {}, loading: false, error: null };
+  if (result.key !== key) return { photos: {}, loading: true, error: null };
+  return { photos: result.photos, loading: false, error: result.error };
 }
 
 /**

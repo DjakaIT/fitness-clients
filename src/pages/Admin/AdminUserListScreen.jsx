@@ -1,10 +1,11 @@
-import { React, useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Text,
   View,
   FlatList,
   ActivityIndicator,
   Pressable,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import UserCard from "../../components/UserCard";
@@ -18,7 +19,13 @@ import useFetchUsers from "../../hooks/useFetchUsers";
 import usePendingUsers from "../../hooks/usePendingUsers";
 import useUpdateUserStatus from "../../hooks/useUpdateUserStatus";
 
+const TRAINING_TYPE_LABEL = {
+  online: "💻 Online",
+  in_person: "🏋️ Osobno",
+};
+
 export default function AdminUserListScreen() {
+  // Approved online clients only — requests are listed separately above.
   const { users, loading } = useFetchUsers("online");
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
@@ -37,25 +44,18 @@ export default function AdminUserListScreen() {
     }
   }, [searchQuery, users]);
 
-  const activeUsers = users.filter((user) => user.status === "active");
-
-  const getClientForm = (count) => {
-    if (count === 0 || count === 1 || count >= 5) {
-      return "Klijentica";
-    }
-    const lastDigit = count % 10;
-    const lastTwoDigits = count % 100;
-    if (
-      (lastDigit === 2 || lastDigit === 3 || lastDigit === 4) &&
-      (lastTwoDigits < 10 || lastTwoDigits > 20)
-    ) {
-      return "Klijentice";
-    }
-    return "Klijentica";
-  };
-
   const { pendingUsers } = usePendingUsers();
   const { updateStatus, isUpdating } = useUpdateUserStatus();
+
+  const decide = async (pending, newStatus) => {
+    const result = await updateStatus(pending.id, newStatus);
+    if (!result.success) {
+      Alert.alert(
+        "Nije spremljeno",
+        "Odluka nije spremljena. Provjeri vezu i pokušaj ponovo.",
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -79,6 +79,60 @@ export default function AdminUserListScreen() {
       }
     />
   );
+
+  // Requests sit at the top of the scrolling list: below a long client list
+  // they used to fall off-screen, unreachable.
+  const pendingSection =
+    pendingUsers.length > 0 ? (
+      <View style={styles.pendingSection}>
+        <Text style={styles.sectionHeader}>ZAHTJEVI ZA PRISTUP</Text>
+        {pendingUsers.map((pending) => {
+          // Approving before she picks online/in person would leave her in
+          // neither client list, and in-person booking hinges on the type.
+          const hasType = !!TRAINING_TYPE_LABEL[pending.trainingType];
+          return (
+            <View key={pending.id} style={styles.pendingCard}>
+              <View style={styles.pendingInfo}>
+                <Text style={styles.pendingName}>
+                  {pending.displayName || pending.email || "Bez imena"}
+                </Text>
+                <Text style={styles.pendingMeta}>
+                  {hasType
+                    ? TRAINING_TYPE_LABEL[pending.trainingType]
+                    : "Još bira vrstu treninga"}
+                </Text>
+              </View>
+              <Pressable
+                style={[
+                  styles.pendingBtn,
+                  styles.approveBtn,
+                  (!hasType || isUpdating) && styles.pendingBtnDisabled,
+                ]}
+                onPress={() => decide(pending, "active")}
+                disabled={!hasType || isUpdating}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !hasType || isUpdating }}
+              >
+                <Text style={styles.approveBtnText}>Odobri</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.pendingBtn,
+                  styles.rejectBtn,
+                  isUpdating && styles.pendingBtnDisabled,
+                ]}
+                onPress={() => decide(pending, "rejected")}
+                disabled={isUpdating}
+                accessibilityRole="button"
+              >
+                <Text style={styles.rejectBtnText}>Odbij</Text>
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    ) : null;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -106,15 +160,8 @@ export default function AdminUserListScreen() {
             </Text>
           </View>
           <View style={[styles.statCard, styles.statCardLight]}>
-            <Text style={styles.statNumberLight}>{activeUsers.length}</Text>
-            <Text style={styles.statLabelLight}>
-              {formatClientNumber(activeUsers.length)
-                .split(" ")
-                .slice(1)
-                .join(" ")
-                .toUpperCase()}{" "}
-              TRENUTNO
-            </Text>
+            <Text style={styles.statNumberLight}>{pendingUsers.length}</Text>
+            <Text style={styles.statLabelLight}>NA ČEKANJU</Text>
           </View>
         </View>
 
@@ -122,43 +169,11 @@ export default function AdminUserListScreen() {
           data={filteredUsers}
           keyExtractor={(item) => item.id}
           renderItem={renderUserCard}
+          ListHeaderComponent={pendingSection}
           style={styles.list}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
-        {pendingUsers.length > 0 && (
-          <View>
-            <Text style={styles.sectionHeader}>ZAHTJEVI ZA PRISTUP</Text>
-            {pendingUsers.map((pending) => (
-              <View key={pending.id} style={styles.pendingCard}>
-                <View style={styles.pendingInfo}>
-                  <Text style={styles.pendingName}>{pending.displayName}</Text>
-                  <Text style={styles.pendingMeta}>
-                    {pending.trainingType === "online"
-                      ? "💻 Online"
-                      : pending.trainingType === "in_person"
-                        ? "🏋️ Osobno"
-                        : "Tip nije odabran"}
-                  </Text>
-                </View>
-                <Pressable
-                  style={[styles.pendingBtn, styles.approveBtn]}
-                  onPress={() => updateStatus(pending.id, "active")}
-                  disabled={isUpdating}
-                >
-                  <Text style={styles.approveBtnText}>Odobri</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.pendingBtn, styles.rejectBtn]}
-                  onPress={() => updateStatus(pending.id, "rejected")}
-                  disabled={isUpdating}
-                >
-                  <Text style={styles.rejectBtnText}>Odbij</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
     </SafeAreaView>
   );

@@ -23,6 +23,7 @@ const {
   query,
   where,
   runTransaction,
+  serverTimestamp,
 } = require("firebase/firestore");
 
 const TRAINER_EMAIL = "danielrajic145@gmail.com";
@@ -95,6 +96,10 @@ beforeEach(async () => {
       ...activeClient("pendingC"),
       status: "pending",
     });
+    await setDoc(doc(db, "users", "onlineD"), {
+      ...activeClient("onlineD"),
+      trainingType: "online",
+    });
     await setDoc(doc(db, "users", "trainer"), {
       uid: "trainer",
       email: TRAINER_EMAIL,
@@ -162,13 +167,102 @@ describe("users — privilege escalation", () => {
     );
   });
 
-  it("lets a client pick a valid training type, but not an invented one", async () => {
+  it("lets a waiting client pick and correct a training type, but not an invented one", async () => {
+    const db = authed("pendingC", "pendingC@example.com");
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "pendingC"), { trainingType: "online" }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "pendingC"), { trainingType: "in_person" }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "pendingC"), { trainingType: "vip" }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "pendingC"), { trainingType: null }),
+    );
+  });
+
+  // Regression: the type was editable forever, so an approved online client
+  // could flip herself to in-person and start booking the trainer's calendar.
+  it("freezes the training type once the client is approved", async () => {
+    await assertFails(
+      updateDoc(
+        doc(authed("onlineD", "onlineD@example.com"), "users", "onlineD"),
+        {
+          trainingType: "in_person",
+        },
+      ),
+    );
+    await assertFails(
+      updateDoc(doc(clientDb("clientA"), "users", "clientA"), {
+        trainingType: "online",
+      }),
+    );
+  });
+
+  it("lets an approved client with no type yet pick one, once", async () => {
+    await seed((db) =>
+      updateDoc(doc(db, "users", "clientA"), { trainingType: null }),
+    );
     const db = clientDb("clientA");
     await assertSucceeds(
       updateDoc(doc(db, "users", "clientA"), { trainingType: "online" }),
     );
     await assertFails(
-      updateDoc(doc(db, "users", "clientA"), { trainingType: "vip" }),
+      updateDoc(doc(db, "users", "clientA"), { trainingType: "in_person" }),
+    );
+  });
+
+  it("lets the trainer change any client's training type", async () => {
+    await assertSucceeds(
+      updateDoc(doc(trainerDb(), "users", "clientA"), {
+        trainingType: "online",
+      }),
+    );
+  });
+
+  // The trainer's client list loads every profile; a client must not be able
+  // to stuff hers with fields of her own or a megabyte-long name.
+  it("refuses a client adding unknown fields or oversized values to her profile", async () => {
+    const db = clientDb("clientA");
+    await assertFails(
+      updateDoc(doc(db, "users", "clientA"), { notes: "anything" }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "clientA"), { displayName: "x".repeat(101) }),
+    );
+    await assertFails(updateDoc(doc(db, "users", "clientA"), { photoURL: 42 }));
+  });
+
+  it("accepts the login refresh only with the server's clock", async () => {
+    const db = clientDb("clientA");
+    await assertSucceeds(
+      setDoc(
+        doc(db, "users", "clientA"),
+        { lastLogin: serverTimestamp(), displayName: "Ana" },
+        { merge: true },
+      ),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "clientA"), {
+        lastLogin: new Date("2000-01-01"),
+      }),
+    );
+  });
+
+  // An older profile may carry a field the allowlist does not name; only the
+  // keys a write changes are checked, so its login refresh must still pass.
+  it("still accepts the login refresh on a profile with a legacy field", async () => {
+    await seed((db) =>
+      updateDoc(doc(db, "users", "clientA"), { legacyField: true }),
+    );
+    await assertSucceeds(
+      setDoc(
+        doc(clientDb("clientA"), "users", "clientA"),
+        { lastLogin: serverTimestamp() },
+        { merge: true },
+      ),
     );
   });
 
@@ -200,6 +294,50 @@ describe("users — privilege escalation", () => {
         email: "newbie@example.com",
         role: "user",
         status: "pending",
+      }),
+    );
+  });
+
+  it("accepts exactly the profile AuthContext creates, and nothing extra", async () => {
+    const db = authed("newbie", "newbie@example.com");
+    const profile = {
+      uid: "newbie",
+      email: "newbie@example.com",
+      displayName: "Nova Klijentica",
+      photoURL: null,
+      role: "user",
+      status: "pending",
+      trainingType: null,
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+    };
+    await assertFails(
+      setDoc(doc(db, "users", "newbie"), { ...profile, notes: "x" }),
+    );
+    // Skipping the waiting room's type pick is not a way around approval,
+    // but there is no reason to accept it either.
+    await assertFails(
+      setDoc(doc(db, "users", "newbie"), {
+        ...profile,
+        trainingType: "in_person",
+      }),
+    );
+    await assertSucceeds(setDoc(doc(db, "users", "newbie"), profile));
+  });
+
+  it("accepts the trainer's own first sign-in as an approved admin", async () => {
+    await seed((db) => deleteDoc(doc(db, "users", "trainer")));
+    await assertSucceeds(
+      setDoc(doc(trainerDb(), "users", "trainer"), {
+        uid: "trainer",
+        email: TRAINER_EMAIL,
+        displayName: "Marta",
+        photoURL: "https://example.com/m.jpg",
+        role: "admin",
+        status: "active",
+        trainingType: null,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
       }),
     );
   });
@@ -277,6 +415,104 @@ describe("appointments — booking", () => {
       setDoc(doc(db, "appointments", "17-03-2025_09:00"), {
         userId: "clientA",
         appointmentDate: "17-03-2025",
+        time: "09:00",
+        status: "active",
+      }),
+    );
+  });
+
+  it("refuses a time that is not a real clock time", async () => {
+    const db = clientDb("clientA");
+    await assertFails(
+      setDoc(doc(db, "appointments", slotId(date, "25:99")), {
+        userId: "clientA",
+        appointmentDate: date,
+        time: "25:99",
+        status: "active",
+      }),
+    );
+  });
+
+  // Regression: nothing stopped an approved *online* client from booking (or
+  // reading) the in-person calendar.
+  it("refuses an online client booking or reading the calendar", async () => {
+    const db = authed("onlineD", "onlineD@example.com");
+    await assertFails(
+      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
+        userId: "onlineD",
+        appointmentDate: date,
+        time: "09:00",
+        status: "active",
+      }),
+    );
+    await assertFails(
+      getDocs(
+        query(collection(db, "appointments"), where("status", "==", "active")),
+      ),
+    );
+  });
+
+  it("refuses booking a slot in the past or far beyond the coming week", async () => {
+    const db = clientDb("clientA");
+    const past = futureDate(-3);
+    await assertFails(
+      setDoc(doc(db, "appointments", slotId(past, "09:00")), {
+        userId: "clientA",
+        appointmentDate: past,
+        time: "09:00",
+        status: "active",
+      }),
+    );
+    const farAway = futureDate(40);
+    await assertFails(
+      setDoc(doc(db, "appointments", slotId(farAway, "09:00")), {
+        userId: "clientA",
+        appointmentDate: farAway,
+        time: "09:00",
+        status: "active",
+      }),
+    );
+  });
+
+  // The slot documents are readable by every in-person client, so nothing
+  // but the booking itself may be stored on them — no names, no notes.
+  it("refuses extra fields on a booking", async () => {
+    const db = clientDb("clientA");
+    await assertFails(
+      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
+        userId: "clientA",
+        appointmentDate: date,
+        time: "09:00",
+        status: "active",
+        userName: "Ana Anić",
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
+        userId: "clientA",
+        appointmentDate: date,
+        time: "09:00",
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("refuses claiming a released slot that has already passed", async () => {
+    const past = futureDate(-3);
+    await seed((db) =>
+      setDoc(doc(db, "appointments", slotId(past, "09:00")), {
+        userId: "clientA",
+        appointmentDate: past,
+        time: "09:00",
+        status: "cancelled",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(clientDb("clientB"), "appointments", slotId(past, "09:00")), {
+        userId: "clientB",
+        appointmentDate: past,
         time: "09:00",
         status: "active",
       }),
@@ -416,6 +652,23 @@ describe("appointments — the 24h cancellation rule", () => {
     );
   });
 
+  it("refuses a cancellation that also writes anything else", async () => {
+    await seedSlot(far, "09:00");
+    const db = clientDb("clientA");
+    await assertFails(
+      updateDoc(doc(db, "appointments", slotId(far, "09:00")), {
+        status: "cancelled",
+        note: "x",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, "appointments", slotId(far, "09:00")), {
+        status: "cancelled",
+        cancelledAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("lets the trainer cancel at any time, deadline or not", async () => {
     const d = new Date(Date.now() + 2 * 3600000);
     const time = `${String(d.getUTCHours()).padStart(2, "0")}:00`;
@@ -496,19 +749,79 @@ describe("measurements and weekly reviews stay private", () => {
     await assertSucceeds(getDoc(doc(trainerDb(), "weekly_review", "rev1")));
   });
 
+  const review = (uid, over = {}) => ({
+    userId: uid,
+    userName: "Ana Anić",
+    ratings: { training: 4, eating: 3, communication: 5 },
+    reflection: "Dobar tjedan.",
+    createdAt: serverTimestamp(),
+    ...over,
+  });
+
   it("lets a client write a review only under their own id", async () => {
     const db = clientDb("clientA");
     await assertSucceeds(
-      setDoc(doc(db, "weekly_review", "new1"), {
-        userId: "clientA",
-        reflection: "ok",
-      }),
+      setDoc(doc(db, "weekly_review", "new1"), review("clientA")),
     );
     await assertFails(
-      setDoc(doc(db, "weekly_review", "new2"), {
-        userId: "clientB",
-        reflection: "spoof",
-      }),
+      setDoc(doc(db, "weekly_review", "new2"), review("clientB")),
+    );
+  });
+
+  // An Apple account can have no name at all; that must not block a review.
+  it("accepts a review from a client with no name", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(clientDb("clientA"), "weekly_review", "new1"),
+        review("clientA", { userName: null }),
+      ),
+    );
+  });
+
+  it("refuses ratings outside 1–5, missing categories or non-numbers", async () => {
+    const db = clientDb("clientA");
+    for (const ratings of [
+      { training: 0, eating: 3, communication: 5 },
+      { training: 6, eating: 3, communication: 5 },
+      { training: 4.5, eating: 3, communication: 5 },
+      { training: "5", eating: 3, communication: 5 },
+      { training: 4, eating: 3 },
+      { training: 4, eating: 3, communication: 5, mood: 5 },
+    ]) {
+      await assertFails(
+        setDoc(doc(db, "weekly_review", "bad"), review("clientA", { ratings })),
+      );
+    }
+  });
+
+  it("refuses an oversized reflection, a fake date or extra fields", async () => {
+    const db = clientDb("clientA");
+    await assertFails(
+      setDoc(
+        doc(db, "weekly_review", "bad"),
+        review("clientA", { reflection: "x".repeat(2001) }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, "weekly_review", "bad"),
+        review("clientA", { createdAt: new Date("2020-01-01") }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, "weekly_review", "bad"),
+        review("clientA", { pinned: true }),
+      ),
+    );
+  });
+
+  it("refuses a review from a client still in the waiting room", async () => {
+    await assertFails(
+      setDoc(
+        doc(authed("pendingC", "pendingC@example.com"), "weekly_review", "x"),
+        review("pendingC"),
+      ),
     );
   });
 
@@ -542,6 +855,18 @@ describe("trainer schedule", () => {
   it("is readable by clients so they can see availability", async () => {
     await assertSucceeds(
       getDoc(doc(clientDb("clientA"), "config", "trainerSchedule")),
+    );
+  });
+
+  it("is not readable by a client still in the waiting room", async () => {
+    await assertFails(
+      getDoc(
+        doc(
+          authed("pendingC", "pendingC@example.com"),
+          "config",
+          "trainerSchedule",
+        ),
+      ),
     );
   });
 
@@ -630,6 +955,27 @@ describe("client check-ins", () => {
         measurement("clientA", {
           photoAngles: ["front", "back", "left", "right", "top"],
         }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA", { photoAngles: ["selfie"] }),
+      ),
+    );
+  });
+
+  it("refuses fields a check-in does not have", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA", { notes: "x".repeat(500000) }),
+      ),
+    );
+    await assertSucceeds(
+      setDoc(
+        doc(clientDb("clientA"), "measurements", `clientA_${date}`),
+        measurement("clientA", { updatedAt: serverTimestamp() }),
       ),
     );
   });
@@ -728,6 +1074,15 @@ describe("progress photos", () => {
       setDoc(
         doc(clientDb("clientA"), "progress_photos", id("clientA")),
         photo("clientA", "front", { mimeType: "image/png" }),
+      ),
+    );
+  });
+
+  it("refuses a second payload smuggled next to the photo", async () => {
+    await assertFails(
+      setDoc(
+        doc(clientDb("clientA"), "progress_photos", id("clientA")),
+        photo("clientA", "front", { extra: "/9j/" + "A".repeat(200_000) }),
       ),
     );
   });
@@ -862,6 +1217,23 @@ describe("exercise logs", () => {
         doc(clientDb("clientA"), "exercise_logs", "clientA_35"),
         log("clientA", "35", { history: Array(21).fill({ sets: [1] }) }),
       ),
+    );
+  });
+
+  it("accepts the full document the app writes, but no unknown fields", async () => {
+    const full = log("clientA", "35", {
+      lastWeekStart: "2026-09-21",
+      lastTrainingNumber: 1,
+      updatedAt: serverTimestamp(),
+    });
+    await assertSucceeds(
+      setDoc(doc(clientDb("clientA"), "exercise_logs", "clientA_35"), full),
+    );
+    await assertFails(
+      setDoc(doc(clientDb("clientA"), "exercise_logs", "clientA_35"), {
+        ...full,
+        notes: "x",
+      }),
     );
   });
 

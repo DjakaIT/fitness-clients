@@ -128,6 +128,8 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
   },
+  pendingSection: { marginBottom: 20 },
+  pendingBtnDisabled: { opacity: 0.4 },
   approveBtn: { backgroundColor: "rgba(52, 211, 153, 0.12)" },
   approveBtnText: {
     fontSize: 13,

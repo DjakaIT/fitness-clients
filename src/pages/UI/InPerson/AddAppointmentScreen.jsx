@@ -11,6 +11,7 @@ import useTrainerSchedule from "../../../hooks/useTrainerSchedule";
 import useBookedSlots from "../../../hooks/useBookedSlots";
 import {
   CLIENT_APPOINTMENT_START_TIMES,
+  canCancel,
   getBookingWindow,
   formatDateShort,
   formatDateLong,
@@ -142,7 +143,16 @@ export default function AddAppointmentScreen() {
     setSelectedTime(null);
   };
 
+  // A booking already on the server that is inside the cancellation cutoff
+  // cannot be dropped from the week any more than it can be cancelled from
+  // the home screen. Slots added on this screen and not yet sent always can.
+  const isLocked = (slot) =>
+    existingSlots.some((s) => s.date === slot.date && s.time === slot.time) &&
+    !canCancel(slot.date, slot.time);
+
   const handleRemoveSlot = (date) => {
+    const slot = slots.find((s) => s.date === date);
+    if (slot && isLocked(slot)) return;
     setSubmitError(null);
     setSlots((prev) => prev.filter((s) => s.date !== date));
     if (selectedDate === date) setSelectedDate(null);
@@ -232,16 +242,23 @@ export default function AddAppointmentScreen() {
                           {formatDateLong(slot.date)}
                         </Text>
                         <Text style={styles.slotTime}>{slot.time}</Text>
+                        {isLocked(slot) && (
+                          <Text style={styles.slotLockedText}>
+                            Manje od 24 h do termina — ne može se otkazati
+                          </Text>
+                        )}
                       </View>
-                      <PressableScale
-                        style={styles.slotRemoveBtn}
-                        onPress={() => handleRemoveSlot(slot.date)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Ukloni termin ${formatDateLong(slot.date)}`}
-                        hitSlop={8}
-                      >
-                        <Text style={styles.slotRemoveText}>✕</Text>
-                      </PressableScale>
+                      {!isLocked(slot) && (
+                        <PressableScale
+                          style={styles.slotRemoveBtn}
+                          onPress={() => handleRemoveSlot(slot.date)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ukloni termin ${formatDateLong(slot.date)}`}
+                          hitSlop={8}
+                        >
+                          <Text style={styles.slotRemoveText}>✕</Text>
+                        </PressableScale>
+                      )}
                     </View>
                   ))
                 )}

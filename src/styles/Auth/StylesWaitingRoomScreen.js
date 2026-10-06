@@ -48,6 +48,20 @@ export const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
   },
+  changeTypeBtn: { marginTop: 14, paddingVertical: 8, paddingHorizontal: 16 },
+  changeTypeText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#F497BA",
+    textDecorationLine: "underline",
+  },
+  errorText: {
+    marginTop: 20,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: "#FFB4C6",
+    textAlign: "center",
+  },
   spinnerWrap: { marginTop: 40 },
   logoutBtn: {
     position: "absolute",

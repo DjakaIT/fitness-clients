@@ -3,6 +3,7 @@ import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
 import {
   SlotTakenError,
+  TooLateToCancelError,
   syncWeekInTransaction,
 } from "../../backend/services/appointmentService";
 import { formatDateShort } from "../../backend/utils/appointmentConfig";
@@ -36,6 +37,16 @@ export default function useSyncAppointments() {
           success: false,
           code: error.code,
           error: `Termin ${formatDateShort(error.slot.date)} u ${error.slot.time} je upravo netko rezervirao. Odaberi drugi.`,
+        };
+      }
+      if (error instanceof TooLateToCancelError) {
+        const which = error.slot
+          ? `Termin ${formatDateShort(error.slot.date)} u ${error.slot.time}`
+          : "Jedan od termina";
+        return {
+          success: false,
+          code: error.code,
+          error: `${which} počinje za manje od 24 sata i više se ne može otkazati — javi se trenerici.`,
         };
       }
       console.error("Error syncing appointments:", error);

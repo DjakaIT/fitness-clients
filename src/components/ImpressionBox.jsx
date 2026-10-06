@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { PencilSimple } from "phosphor-react-native";
 import { useTheme } from "../context/ThemeContext";
+import { MAX_REFLECTION_LENGTH } from "../../backend/utils/reviews";
 
 const ImpressionsBox = ({ value, onChangeText }) => {
   const { isDark, theme } = useTheme();
@@ -39,6 +40,7 @@ const ImpressionsBox = ({ value, onChangeText }) => {
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={placeholder}
+        maxLength={MAX_REFLECTION_LENGTH}
       />
     </View>
   );

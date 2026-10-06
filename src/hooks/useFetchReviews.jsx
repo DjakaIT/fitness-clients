@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
+import { sortReviewsNewestFirst } from "../../backend/utils/reviews";
 
 export default function useFetchReviews(userId) {
   const [reviews, setReviews] = useState([]);
@@ -24,7 +25,7 @@ export default function useFetchReviews(userId) {
           id: doc.id,
           ...doc.data(),
         }));
-        setReviews(reviewList);
+        setReviews(sortReviewsNewestFirst(reviewList));
       } catch (error) {
         console.error("Error getting review:", error);
       } finally {

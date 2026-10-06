@@ -31,10 +31,12 @@ export class NotOwnerError extends Error {
 }
 
 export class TooLateToCancelError extends Error {
-  constructor() {
+  /** `slot` ({ date, time }) is set when a week sync tried to drop it. */
+  constructor(slot = null) {
     super("Past the cancellation cutoff.");
     this.name = "TooLateToCancelError";
     this.code = "too-late";
+    this.slot = slot;
   }
 }
 
@@ -53,6 +55,7 @@ export async function syncWeekInTransaction({
   userId,
   desired = [],
   existing = [],
+  now = Date.now(),
   timestamp,
 }) {
   const { toBook, toCancel, unchanged } = diffSlotSelection(existing, desired);
@@ -78,11 +81,23 @@ export async function syncWeekInTransaction({
     }
   }
 
-  // ── Phase 3: write.
-  for (const { ref, snap } of releases) {
-    if (isActive(snap) && snap.data().userId === userId) {
-      tx.update(ref, { status: "cancelled", cancelledAt: timestamp() });
+  // Dropping a slot from the week is a cancellation, so the 24h cutoff
+  // applies exactly as it does to the cancel button — checked against the
+  // stored slot, not the screen's copy. Without this the rules refused the
+  // whole transaction and the client saw a generic "check your connection".
+  const ownReleases = releases.filter(
+    ({ snap }) => isActive(snap) && snap.data().userId === userId,
+  );
+  for (const { slot, snap } of ownReleases) {
+    const { appointmentDate, time } = snap.data();
+    if (!canCancel(appointmentDate, time, now)) {
+      throw new TooLateToCancelError(slot);
     }
+  }
+
+  // ── Phase 3: write.
+  for (const { ref } of ownReleases) {
+    tx.update(ref, { status: "cancelled", cancelledAt: timestamp() });
   }
 
   for (const { slot, ref, snap } of claims) {

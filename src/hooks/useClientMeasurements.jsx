@@ -9,6 +9,7 @@ import { db } from "../../backend/config/firebase";
 export default function useClientMeasurements(userId) {
   const [measurements, setMeasurements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!userId) {
@@ -18,6 +19,7 @@ export default function useClientMeasurements(userId) {
 
     setMeasurements([]);
     setLoading(true);
+    setError(null);
 
     const q = query(
       collection(db, "measurements"),
@@ -33,8 +35,9 @@ export default function useClientMeasurements(userId) {
         setMeasurements(data);
         setLoading(false);
       },
-      (error) => {
-        console.error("Error loading measurements:", error);
+      (err) => {
+        console.error("Error loading measurements:", err);
+        setError(err);
         setLoading(false);
       },
     );
@@ -42,5 +45,5 @@ export default function useClientMeasurements(userId) {
     return unsub;
   }, [userId]);
 
-  return { measurements, loading };
+  return { measurements, loading, error };
 }
