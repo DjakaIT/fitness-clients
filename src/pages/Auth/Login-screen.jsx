@@ -27,6 +27,15 @@ export default function LoginScreen() {
   // resolving (or the reverse) would race two onAuthStateChanged events.
   const busy = google.loading || apple.loading;
   const error = apple.error ?? google.error;
+  // Expo Go has no Google module: there, an iPhone signs in with Apple only.
+  const subtitle =
+    apple.available && google.available
+      ? "Prijavi se da nastaviš"
+      : apple.available
+        ? "Prijavi se Apple računom da nastaviš"
+        : google.available
+          ? "Prijavi se sa Google računom da nastaviš"
+          : "Prijava nije dostupna u ovoj verziji aplikacije.";
 
   const signInWithGoogle = () => {
     apple.clearError();
@@ -55,11 +64,7 @@ export default function LoginScreen() {
 
             <FadeInView delay={250} style={{ alignItems: "center" }}>
               <Text style={styles.title}>Dobrodošla!</Text>
-              <Text style={styles.subtitle}>
-                {apple.available
-                  ? "Prijavi se da nastaviš"
-                  : "Prijavi se sa Google računom da nastaviš"}
-              </Text>
+              <Text style={styles.subtitle}>{subtitle}</Text>
             </FadeInView>
 
             <FadeInView delay={420} style={styles.buttonWrap}>
@@ -96,30 +101,32 @@ export default function LoginScreen() {
                 </View>
               )}
 
-              <TouchableOpacity
-                onPress={signInWithGoogle}
-                disabled={busy}
-                style={[styles.googleButton, busy && styles.buttonDisabled]}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: busy, busy: google.loading }}
-              >
-                {google.loading ? (
-                  <ActivityIndicator color={AUTH.accent} />
-                ) : (
-                  <>
-                    <Image
-                      source={{
-                        uri: "https://developers.google.com/identity/images/g-logo.png",
-                      }}
-                      style={styles.googleIcon}
-                    />
-                    <Text style={styles.googleButtonText}>
-                      Nastavi s Google računom
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              {google.available && (
+                <TouchableOpacity
+                  onPress={signInWithGoogle}
+                  disabled={busy}
+                  style={[styles.googleButton, busy && styles.buttonDisabled]}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: busy, busy: google.loading }}
+                >
+                  {google.loading ? (
+                    <ActivityIndicator color={AUTH.accent} />
+                  ) : (
+                    <>
+                      <Image
+                        source={{
+                          uri: "https://developers.google.com/identity/images/g-logo.png",
+                        }}
+                        style={styles.googleIcon}
+                      />
+                      <Text style={styles.googleButtonText}>
+                        Nastavi s Google računom
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {!!error && (
                 <Text style={styles.errorText} accessibilityRole="alert">

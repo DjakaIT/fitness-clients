@@ -19,6 +19,9 @@ import { useTheme, useThemedStyles } from "../../../context/ThemeContext";
 import useClientMeasurements from "../../../hooks/useClientMeasurements";
 import { useCheckInPhotos, useSaveCheckIn } from "../../../hooks/useCheckIn";
 import PressableScale from "../../../components/PressableScale";
+import useConfirmDiscard, {
+  confirmDiscard,
+} from "../../../hooks/useConfirmDiscard";
 import PhotoSlot from "../../../components/PhotoSlot";
 import { capturePhoto } from "../../../utils/photoCapture";
 import {
@@ -112,6 +115,12 @@ export default function CheckInScreen({ route, navigation }) {
     (hasAnyMeasurement(values) || photoCount > 0) &&
     !isSaving;
 
+  const { allowLeave } = useConfirmDiscard(navigation, dirty);
+  // Moving to another date shows that date's entry instead, so it discards
+  // edits too — asked the same way.
+  const goToDate = (delta) =>
+    confirmDiscard(dirty, () => setDate((d) => shiftDate(d, delta)));
+
   const setField = (key, text) => {
     setFormError(null);
     setEditedValues({ ...values, [key]: text });
@@ -159,8 +168,10 @@ export default function CheckInScreen({ route, navigation }) {
       photosBefore: savedPhotos,
       photosAfter: photos,
     });
-    if (result.success) navigation.goBack();
-    else setFormError("Unos nije spremljen. Provjeri vezu i pokušaj ponovo.");
+    if (result.success) {
+      allowLeave();
+      navigation.goBack();
+    } else setFormError("Unos nije spremljen. Provjeri vezu i pokušaj ponovo.");
   };
 
   // Right to erasure, in the app rather than by e-mail: the whole entry,
@@ -189,6 +200,7 @@ export default function CheckInScreen({ route, navigation }) {
         );
       }
       await batch.commit();
+      allowLeave();
       navigation.goBack();
     } catch (error) {
       console.error("Error deleting check-in:", error);
@@ -234,7 +246,7 @@ export default function CheckInScreen({ route, navigation }) {
             <View style={styles.dateRow}>
               <PressableScale
                 style={styles.dateArrow}
-                onPress={() => setDate((d) => shiftDate(d, -1))}
+                onPress={() => goToDate(-1)}
                 accessibilityRole="button"
                 accessibilityLabel="Dan ranije"
               >
@@ -247,7 +259,7 @@ export default function CheckInScreen({ route, navigation }) {
                   date >= today && styles.dateArrowDisabled,
                 ]}
                 disabled={date >= today}
-                onPress={() => setDate((d) => shiftDate(d, 1))}
+                onPress={() => goToDate(1)}
                 accessibilityRole="button"
                 accessibilityLabel="Dan kasnije"
               >

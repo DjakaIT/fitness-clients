@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,57 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import useFetchInPersonUsers from "../../hooks/useFetchInPersonUsers";
+import useFetchUsers from "../../hooks/useFetchUsers";
+import useBookedSlots from "../../hooks/useBookedSlots";
+import { isNotOver } from "../../hooks/useAppointments";
+import {
+  formatDateShort,
+  toLocalDateString,
+} from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminInPersonScreen";
 import GeneralButton from "../../components/GeneralButton";
 
+/**
+ * Who is coming today, at a glance — before this the trainer had to open
+ * every client to find out.
+ */
+function TodayCard({ names }) {
+  const today = useMemo(() => toLocalDateString(), []);
+  const { bookedSlots, loading } = useBookedSlots(today, today);
+  const sessions = [...(bookedSlots[today] ?? [])]
+    .filter((s) => isNotOver({ appointmentDate: today, time: s.time }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  return (
+    <View style={styles.todayCard}>
+      <Text style={styles.todayLabel}>DANAS · {formatDateShort(today)}</Text>
+      {loading ? (
+        <ActivityIndicator color="#7C3AED" />
+      ) : sessions.length === 0 ? (
+        <Text style={styles.todayEmpty}>Danas više nema termina.</Text>
+      ) : (
+        sessions.map((s) => (
+          <View key={s.id} style={styles.todayRow}>
+            <Text style={styles.todayTime}>{s.time}</Text>
+            <Text style={styles.todayName} numberOfLines={1}>
+              {names.get(s.userId) ?? "klijentica"}
+            </Text>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
 export default function AdminInPersonScreen() {
-  const { users, loading } = useFetchInPersonUsers();
+  // Live, so a client approved, switched or removed a moment ago shows here
+  // without leaving the screen.
+  const { users, loading } = useFetchUsers("in_person");
   const navigation = useNavigation();
+  const names = useMemo(
+    () => new Map(users.map((u) => [u.id, u.displayName])),
+    [users],
+  );
 
   if (loading) {
     return (
@@ -66,6 +110,7 @@ export default function AdminInPersonScreen() {
           data={users}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          ListHeaderComponent={<TodayCard names={names} />}
           style={styles.list}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

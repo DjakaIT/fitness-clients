@@ -150,4 +150,16 @@ export const makeStyles = (t) =>
       fontFamily: "Inter_600SemiBold",
       color: t.danger,
     },
+    deleteBtn: {
+      alignSelf: "center",
+      marginTop: 14,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+    },
+    deleteText: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: t.textTertiary,
+      textDecorationLine: "underline",
+    },
   });

@@ -17,7 +17,12 @@ import useAppointments from "../../../hooks/useAppointments";
 import useCancelAppointment from "../../../hooks/useCancelAppointment";
 import ProfilePageComponent from "../../../components/ProfilePageComponent";
 import CancelAppointmentSheet from "../../../components/CancelAppointmentSheet";
-import { formatDateLong } from "../../../../backend/utils/appointmentConfig";
+import {
+  formatDateLong,
+  getBookingWindow,
+  weekStartOf,
+} from "../../../../backend/utils/appointmentConfig";
+import { BRAND } from "../../../../backend/config/tenant";
 import { makeStyles } from "../../../styles/UI/InPerson/STylesInPersonHomeScreen";
 
 export default function InPersonHomeScreen() {
@@ -76,7 +81,7 @@ export default function InPersonHomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.brand}>MARTA FITNESS</Text>
+              <Text style={styles.brand}>{BRAND.appName}</Text>
               <Text style={styles.greeting}>Dobrodošla,</Text>
               <Text style={styles.name}>{firstName}!</Text>
             </View>
@@ -131,6 +136,20 @@ export default function InPersonHomeScreen() {
       <CancelAppointmentSheet
         visible={cancelTarget !== null}
         appointment={cancelTarget}
+        // Only for the week still open for booking — for the current week
+        // there is nowhere to add a replacement, so the note would mislead.
+        othersInWeek={
+          cancelTarget &&
+          weekStartOf(cancelTarget.appointmentDate) ===
+            getBookingWindow().weekStart
+            ? appointments.filter(
+                (a) =>
+                  a.id !== cancelTarget.id &&
+                  weekStartOf(a.appointmentDate) ===
+                    weekStartOf(cancelTarget.appointmentDate),
+              ).length
+            : null
+        }
         onClose={() => setCancelTarget(null)}
         onConfirm={handleConfirmCancel}
         isCancelling={isCancelling}

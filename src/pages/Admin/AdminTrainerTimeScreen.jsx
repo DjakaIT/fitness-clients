@@ -20,9 +20,35 @@ import {
   normalizeDayBlocks,
   getFreeClientTimeText,
   getBookingWindow,
+  formatDateShort,
   formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
+import { findScheduleConflicts } from "../../../backend/utils/bookingRules";
+import useBookedSlots from "../../hooks/useBookedSlots";
+import useFetchUsers from "../../hooks/useFetchUsers";
 import { styles } from "../../styles/Admin/StylesAdminTrainerTimeScreen";
+
+/**
+ * Bookings the schedule on screen would overlap. Marking herself busy moves
+ * nobody's session, so she sees whose before saving — and can cancel or
+ * rearrange them from the client's screen.
+ */
+function ConflictList({ conflicts, names }) {
+  if (conflicts.length === 0) return null;
+  return (
+    <View style={styles.conflictBox} accessibilityRole="alert">
+      <Text style={styles.conflictTitle}>
+        ⚠ Zauzeće se preklapa s rezerviranim terminima:
+      </Text>
+      {conflicts.map((c) => (
+        <Text key={`${c.date}_${c.time}`} style={styles.conflictItem}>
+          {formatDateShort(c.date)} u {c.time} —{" "}
+          {names.get(c.userId) ?? "klijentica"}
+        </Text>
+      ))}
+    </View>
+  );
+}
 
 const timeToMin = (t) => {
   const [h, m] = t.split(":").map(Number);
@@ -48,7 +74,20 @@ export default function AdminTrainerTimeScreen() {
   const [newStart, setNewStart] = useState(null);
   const [newEnd, setNewEnd] = useState(null);
 
-  const { weekStart: targetWeekStart } = useMemo(() => getBookingWindow(), []);
+  const { weekStart: targetWeekStart, weekEnd: targetWeekEnd } = useMemo(
+    () => getBookingWindow(),
+    [],
+  );
+  const { bookedSlots } = useBookedSlots(targetWeekStart, targetWeekEnd);
+  const { users: inPersonClients } = useFetchUsers("in_person");
+  const names = useMemo(
+    () => new Map(inPersonClients.map((u) => [u.id, u.displayName])),
+    [inPersonClients],
+  );
+  const conflicts = useMemo(
+    () => findScheduleConflicts(schedule, bookedSlots),
+    [schedule, bookedSlots],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -218,6 +257,8 @@ export default function AdminTrainerTimeScreen() {
               );
             })}
 
+            <ConflictList conflicts={conflicts} names={names} />
+
             <GeneralButton
               onPress={() => setShowConfirm(true)}
               fullWidth
@@ -354,6 +395,7 @@ export default function AdminTrainerTimeScreen() {
         errorTitle="Nije spremljeno"
         errorSubtitle="Provjeri internet vezu i pokušaj ponovo."
       >
+        <ConflictList conflicts={conflicts} names={names} />
         {WORK_DAYS.map((day) => (
           <View key={day.key} style={styles.recapRow}>
             <Text style={styles.recapDay}>{day.shortLabel.toUpperCase()}</Text>

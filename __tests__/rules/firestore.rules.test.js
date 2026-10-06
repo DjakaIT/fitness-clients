@@ -24,7 +24,11 @@ const {
   where,
   runTransaction,
   serverTimestamp,
+  writeBatch,
 } = require("firebase/firestore");
+const {
+  syncWeekInTransaction,
+} = require("../../backend/services/appointmentService");
 
 const TRAINER_EMAIL = "danielrajic145@gmail.com";
 
@@ -56,6 +60,43 @@ function imminentDate() {
 }
 
 const slotId = (date, time) => `${date}_${time}`;
+
+/** Monday of a "YYYY-MM-DD" (UTC calendar), as "YYYY-MM-DD". */
+function mondayOf(date) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+/** `days` after a "YYYY-MM-DD", as "YYYY-MM-DD". */
+function addDays(date, days) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * A client booking the way the app writes one: the slot and her week list
+ * (`booking_weeks`), committed together. `slots` overrides the list.
+ */
+function book(db, uid, date, time, { slots, extra = {} } = {}) {
+  const weekStart = mondayOf(date);
+  const batch = writeBatch(db);
+  batch.set(doc(db, "booking_weeks", `${uid}_${weekStart}`), {
+    userId: uid,
+    weekStart,
+    slots: slots ?? [slotId(date, time)],
+  });
+  batch.set(doc(db, "appointments", slotId(date, time)), {
+    userId: uid,
+    appointmentDate: date,
+    time,
+    status: "active",
+    weekStart,
+    ...extra,
+  });
+  return batch.commit();
+}
 
 /** Seeds documents bypassing the rules, the way the trainer/console would. */
 const seed = (fn) =>
@@ -353,13 +394,25 @@ describe("appointments — booking", () => {
   const date = futureDate();
 
   it("lets an active client book a free slot under its slot id", async () => {
+    await assertSucceeds(book(clientDb("clientA"), "clientA", date, "09:00"));
+  });
+
+  // The week list is where the weekly cap lives; a booking that skips it
+  // would skip the cap.
+  it("refuses a booking that is not on her week list", async () => {
     const db = clientDb("clientA");
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(db, "appointments", slotId(date, "09:00")), {
         userId: "clientA",
         appointmentDate: date,
         time: "09:00",
         status: "active",
+        weekStart: mondayOf(date),
+      }),
+    );
+    await assertFails(
+      book(db, "clientA", date, "09:00", {
+        slots: [slotId(date, "10:00")],
       }),
     );
   });
@@ -454,24 +507,8 @@ describe("appointments — booking", () => {
 
   it("refuses booking a slot in the past or far beyond the coming week", async () => {
     const db = clientDb("clientA");
-    const past = futureDate(-3);
-    await assertFails(
-      setDoc(doc(db, "appointments", slotId(past, "09:00")), {
-        userId: "clientA",
-        appointmentDate: past,
-        time: "09:00",
-        status: "active",
-      }),
-    );
-    const farAway = futureDate(40);
-    await assertFails(
-      setDoc(doc(db, "appointments", slotId(farAway, "09:00")), {
-        userId: "clientA",
-        appointmentDate: farAway,
-        time: "09:00",
-        status: "active",
-      }),
-    );
+    await assertFails(book(db, "clientA", futureDate(-3), "09:00"));
+    await assertFails(book(db, "clientA", futureDate(40), "09:00"));
   });
 
   // The slot documents are readable by every in-person client, so nothing
@@ -479,22 +516,11 @@ describe("appointments — booking", () => {
   it("refuses extra fields on a booking", async () => {
     const db = clientDb("clientA");
     await assertFails(
-      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
-        userId: "clientA",
-        appointmentDate: date,
-        time: "09:00",
-        status: "active",
-        userName: "Ana Anić",
-      }),
+      book(db, "clientA", date, "09:00", { extra: { userName: "Ana Anić" } }),
     );
     await assertSucceeds(
-      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
-        userId: "clientA",
-        appointmentDate: date,
-        time: "09:00",
-        status: "active",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      book(db, "clientA", date, "09:00", {
+        extra: { createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
       }),
     );
   });
@@ -509,14 +535,7 @@ describe("appointments — booking", () => {
         status: "cancelled",
       }),
     );
-    await assertFails(
-      setDoc(doc(clientDb("clientB"), "appointments", slotId(past, "09:00")), {
-        userId: "clientB",
-        appointmentDate: past,
-        time: "09:00",
-        status: "active",
-      }),
-    );
+    await assertFails(book(clientDb("clientB"), "clientB", past, "09:00"));
   });
 
   it("stops a second client overwriting an active booking", async () => {
@@ -528,16 +547,7 @@ describe("appointments — booking", () => {
         status: "active",
       }),
     );
-
-    const db = clientDb("clientB");
-    await assertFails(
-      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
-        userId: "clientB",
-        appointmentDate: date,
-        time: "09:00",
-        status: "active",
-      }),
-    );
+    await assertFails(book(clientDb("clientB"), "clientB", date, "09:00"));
   });
 
   it("lets a client claim a slot somebody else released", async () => {
@@ -549,16 +559,7 @@ describe("appointments — booking", () => {
         status: "cancelled",
       }),
     );
-
-    const db = clientDb("clientB");
-    await assertSucceeds(
-      setDoc(doc(db, "appointments", slotId(date, "09:00")), {
-        userId: "clientB",
-        appointmentDate: date,
-        time: "09:00",
-        status: "active",
-      }),
-    );
+    await assertSucceeds(book(clientDb("clientB"), "clientB", date, "09:00"));
   });
 
   it("lets a client see the week's slots so availability can be shown", async () => {
@@ -589,6 +590,223 @@ describe("appointments — booking", () => {
     );
     await assertSucceeds(
       deleteDoc(doc(trainerDb(), "appointments", slotId(date, "09:00"))),
+    );
+  });
+});
+
+describe("booking weeks — the weekly cap, enforced by the server", () => {
+  // Next week's Monday, so every day of it is bookable and > 24h away
+  // (except, on a Sunday, Monday itself — tests that cancel use Friday).
+  const monday = addDays(mondayOf(futureDate(0)), 7);
+  const day = (i) => addDays(monday, i);
+  const listRef = (db, uid = "clientA", weekStart = monday) =>
+    doc(db, "booking_weeks", `${uid}_${weekStart}`);
+  const list = (slots, over = {}) => ({
+    userId: "clientA",
+    weekStart: monday,
+    slots,
+    ...over,
+  });
+
+  it("accepts up to four slots on four different days", async () => {
+    await assertSucceeds(
+      setDoc(
+        listRef(clientDb()),
+        list([0, 1, 2, 3].map((i) => slotId(day(i), "09:00"))),
+      ),
+    );
+  });
+
+  it("refuses a fifth slot", async () => {
+    await assertFails(
+      setDoc(
+        listRef(clientDb()),
+        list([0, 1, 2, 3, 4].map((i) => slotId(day(i), "09:00"))),
+      ),
+    );
+  });
+
+  it("refuses two slots on the same day", async () => {
+    await assertFails(
+      setDoc(
+        listRef(clientDb()),
+        list([slotId(day(1), "09:00"), slotId(day(1), "17:00")]),
+      ),
+    );
+  });
+
+  it("refuses a slot outside the list's week", async () => {
+    await assertFails(
+      setDoc(listRef(clientDb()), list([slotId(day(7), "09:00")])),
+    );
+    await assertFails(
+      setDoc(listRef(clientDb()), list([slotId(day(-1), "09:00")])),
+    );
+  });
+
+  // Overlapping 7-day windows would each get their own four slots.
+  it("refuses a week that does not start on a Monday", async () => {
+    const tuesday = day(1);
+    await assertFails(
+      setDoc(
+        listRef(clientDb(), "clientA", tuesday),
+        list([slotId(day(2), "09:00")], { weekStart: tuesday }),
+      ),
+    );
+  });
+
+  it("refuses a list under someone else's id, or from an online client", async () => {
+    await assertFails(
+      setDoc(listRef(clientDb(), "clientB"), list([], { userId: "clientB" })),
+    );
+    await assertFails(
+      setDoc(
+        listRef(authed("onlineD", "onlineD@example.com"), "onlineD"),
+        list([], { userId: "onlineD" }),
+      ),
+    );
+  });
+
+  // The way around the cap would be: book four, drop them from the list,
+  // book four more. A slot may leave the list only once it is released.
+  it("refuses dropping a booking from the list while it is still active", async () => {
+    const friday = slotId(day(4), "09:00");
+    await assertSucceeds(book(clientDb(), "clientA", day(4), "09:00"));
+    await assertFails(setDoc(listRef(clientDb()), list([])));
+    await assertFails(deleteDoc(listRef(clientDb())));
+    expect(
+      (await getDoc(doc(trainerDb(), "appointments", friday))).exists(),
+    ).toBe(true);
+  });
+
+  it("lets a booking leave the list when it is cancelled in the same write", async () => {
+    await assertSucceeds(book(clientDb(), "clientA", day(4), "09:00"));
+    const db = clientDb();
+    const batch = writeBatch(db);
+    batch.update(doc(db, "appointments", slotId(day(4), "09:00")), {
+      status: "cancelled",
+    });
+    batch.set(listRef(db), list([]));
+    await assertSucceeds(batch.commit());
+  });
+
+  it("lets the client delete a list once its week is over", async () => {
+    const pastMonday = addDays(monday, -14);
+    await seed(async (db) => {
+      await setDoc(doc(db, "appointments", slotId(pastMonday, "09:00")), {
+        userId: "clientA",
+        appointmentDate: pastMonday,
+        time: "09:00",
+        status: "active",
+      });
+      await setDoc(
+        listRef(db, "clientA", pastMonday),
+        list([slotId(pastMonday, "09:00")], { weekStart: pastMonday }),
+      );
+    });
+    await assertSucceeds(deleteDoc(listRef(clientDb(), "clientA", pastMonday)));
+  });
+
+  it("is readable by its owner and the trainer only", async () => {
+    await seed((db) => setDoc(listRef(db), list([])));
+    await assertSucceeds(getDoc(listRef(clientDb())));
+    await assertSucceeds(getDoc(listRef(trainerDb())));
+    await assertFails(getDoc(listRef(clientDb("clientB"))));
+  });
+});
+
+// The rules above, exercised through the app's own transaction body
+// (backend/services/appointmentService.js) rather than hand-built writes —
+// what the phone sends is exactly what is checked here.
+describe("the app's booking transaction against the real rules", () => {
+  const monday = addDays(mondayOf(futureDate(0)), 7);
+  const slot = (i, time = "09:00") => ({ date: addDays(monday, i), time });
+
+  const sync = (db, desired, existing = [], uid = "clientA") =>
+    runTransaction(db, (tx) =>
+      syncWeekInTransaction({
+        tx,
+        slotRef: (id) => doc(db, "appointments", id),
+        weekRef: (id) => doc(db, "booking_weeks", id),
+        weekStart: monday,
+        userId: uid,
+        desired,
+        existing,
+        timestamp: serverTimestamp,
+      }),
+    );
+
+  it("books a week, then changes one day, keeping the other", async () => {
+    const db = clientDb();
+    await assertSucceeds(sync(db, [slot(1), slot(4)]));
+    await assertSucceeds(sync(db, [slot(1), slot(2)], [slot(1), slot(4)]));
+
+    const friday = await getDoc(
+      doc(db, "appointments", slotId(slot(4).date, "09:00")),
+    );
+    expect(friday.data().status).toBe("cancelled");
+    const week = await getDoc(doc(db, "booking_weeks", `clientA_${monday}`));
+    expect(week.data().slots).toEqual([
+      slotId(slot(1).date, "09:00"),
+      slotId(slot(2).date, "09:00"),
+    ]);
+  });
+
+  it("refuses a fifth session even when the app's own checks are skipped", async () => {
+    await assertFails(
+      sync(clientDb(), [slot(0), slot(1), slot(2), slot(3), slot(4)]),
+    );
+  });
+
+  it("refuses two sessions on one day even when the app's checks are skipped", async () => {
+    await assertFails(sync(clientDb(), [slot(1), slot(1, "17:00")]));
+  });
+
+  it("lets a second client claim a slot the first one released", async () => {
+    await assertSucceeds(sync(clientDb("clientA"), [slot(1), slot(4)]));
+    await assertSucceeds(
+      sync(clientDb("clientA"), [slot(1), slot(2)], [slot(1), slot(4)]),
+    );
+    await assertSucceeds(
+      sync(clientDb("clientB"), [slot(4), slot(3)], [], "clientB"),
+    );
+  });
+
+  it("refuses a slot another client holds", async () => {
+    await assertSucceeds(sync(clientDb("clientA"), [slot(1), slot(4)]));
+    await expect(
+      sync(clientDb("clientB"), [slot(1), slot(3)], [], "clientB"),
+    ).rejects.toMatchObject({ code: "slot-taken" });
+  });
+});
+
+describe("account deletion", () => {
+  beforeEach(() =>
+    seed(async (db) => {
+      await setDoc(doc(db, "weekly_review", "revA"), { userId: "clientA" });
+      await setDoc(doc(db, "weekly_review", "revB"), { userId: "clientB" });
+      await setDoc(doc(db, "workouts", "w_A"), { userId: "clientA" });
+      await setDoc(doc(db, "workouts", "w_B"), { userId: "clientB" });
+    }),
+  );
+
+  it("lets a client delete her own profile, reviews and programs", async () => {
+    const db = clientDb("clientA");
+    await assertSucceeds(deleteDoc(doc(db, "weekly_review", "revA")));
+    await assertSucceeds(deleteDoc(doc(db, "workouts", "w_A")));
+    await assertSucceeds(deleteDoc(doc(db, "users", "clientA")));
+  });
+
+  it("refuses her deleting anybody else's", async () => {
+    const db = clientDb("clientA");
+    await assertFails(deleteDoc(doc(db, "weekly_review", "revB")));
+    await assertFails(deleteDoc(doc(db, "workouts", "w_B")));
+    await assertFails(deleteDoc(doc(db, "users", "clientB")));
+  });
+
+  it("still keeps programs read-only for her otherwise", async () => {
+    await assertFails(
+      updateDoc(doc(clientDb("clientA"), "workouts", "w_A"), { x: 1 }),
     );
   });
 });

@@ -5,6 +5,8 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../../backend/config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { styles } from "../../styles/Auth/StylesWaitingRoomScreen";
+import DeleteAccountSheet from "../../components/DeleteAccountSheet";
+import { BRAND } from "../../../backend/config/tenant";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const TRAINING_TYPES = ["online", "in_person"];
@@ -13,6 +15,7 @@ export default function WaitingRoomScreen() {
   const { user, status, trainingType, logout } = useAuth();
   const [selecting, setSelecting] = useState(false);
   const [selectError, setSelectError] = useState(null);
+  const [deleteVisible, setDeleteVisible] = useState(false);
 
   const handleSelectTrainingType = async (type) => {
     if (!user?.uid) return;
@@ -42,14 +45,14 @@ export default function WaitingRoomScreen() {
     <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <Text style={styles.brand}>MARTA FITNESS</Text>
+          <Text style={styles.brand}>{BRAND.appName}</Text>
 
           {isRejected ? (
             <>
               <Text style={styles.title}>Zahtjev odbijen</Text>
               <Text style={styles.subtitle}>
                 Nažalost, tvoj zahtjev nije odobren.{"\n"}
-                Za više informacija kontaktiraj Martu.
+                Za više informacija javi se trenerici.
               </Text>
             </>
           ) : needsTrainingType ? (
@@ -86,7 +89,7 @@ export default function WaitingRoomScreen() {
             <>
               <Text style={styles.title}>Zahtjev poslan!</Text>
               <Text style={styles.subtitle}>
-                Čekamo potvrdu trenerice Marte.{"\n"}
+                Čekamo potvrdu trenerice {BRAND.trainerNameGenitive}.{"\n"}
                 Dobit ćeš pristup čim te odobri.{"\n\n"}
                 Vrsta treninga:{" "}
                 <Text style={styles.highlight}>
@@ -119,11 +122,30 @@ export default function WaitingRoomScreen() {
             </Text>
           )}
 
-          <Pressable style={styles.logoutBtn} onPress={logout}>
-            <Text style={styles.logoutText}>Odjava</Text>
-          </Pressable>
+          <View style={styles.bottomActions}>
+            <Pressable
+              style={styles.logoutBtn}
+              onPress={logout}
+              accessibilityRole="button"
+            >
+              <Text style={styles.logoutText}>Odjava</Text>
+            </Pressable>
+            {/* Signing in created an account; she must be able to remove
+                it without ever being approved. */}
+            <Pressable
+              style={styles.deleteLink}
+              onPress={() => setDeleteVisible(true)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.deleteLinkText}>Obriši račun</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
+      <DeleteAccountSheet
+        visible={deleteVisible}
+        onClose={() => setDeleteVisible(false)}
+      />
     </LinearGradient>
   );
 }

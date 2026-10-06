@@ -1,30 +1,24 @@
 import { useCallback, useState } from "react";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { signInWithCredential } from "firebase/auth";
 import { auth } from "../../../backend/config/firebase";
-
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  // Only the iOS native sign-in flow reads this (Android uses webClientId
-  // alone); harmless to always pass it. Avoids needing a bundled
-  // GoogleService-Info.plist — see the "without Firebase" mode of this
-  // library's config plugin, which app.json already uses via `iosUrlScheme`.
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-});
+import {
+  SignInCancelledError,
+  getGoogleSignin,
+  requestGoogleCredential,
+} from "./googleSignin";
 
 /** Failures the user can act on, separated from the ones they cannot. */
 const MESSAGES = {
-  [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]:
+  PLAY_SERVICES_NOT_AVAILABLE:
     "Google Play usluge nisu dostupne ili su zastarjele.",
-  [statusCodes.IN_PROGRESS]: "Prijava je već u tijeku.",
+  IN_PROGRESS: "Prijava je već u tijeku.",
 };
 
 const GENERIC_MESSAGE = "Prijava nije uspjela. Provjeri vezu i pokušaj ponovo.";
 
 export function useGoogleAuth() {
+  // False only where the native module is missing (Expo Go).
+  const [available] = useState(() => getGoogleSignin() !== null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -32,26 +26,23 @@ export function useGoogleAuth() {
     setLoading(true);
     setError(null);
     try {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      const response = await GoogleSignin.signIn();
-      const idToken = response?.data?.idToken;
-      if (!idToken) throw new Error("No idToken received from Google Sign-In");
-
-      await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+      const credential = await requestGoogleCredential();
+      await signInWithCredential(auth, credential);
       return { success: true };
     } catch (err) {
       // Cancelling is a choice, not a failure — it must not raise an error.
-      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+      if (err instanceof SignInCancelledError) {
         return { success: false, cancelled: true };
       }
 
       // Previously every failure was only logged, so a user whose sign-in
       // broke saw the button simply stop spinning with no explanation.
       console.error("Google Sign-In error:", err);
-      const message = MESSAGES[err.code] ?? GENERIC_MESSAGE;
+      const statusCodes = getGoogleSignin()?.statusCodes ?? {};
+      const known = Object.keys(MESSAGES).find(
+        (key) => statusCodes[key] && statusCodes[key] === err?.code,
+      );
+      const message = known ? MESSAGES[known] : GENERIC_MESSAGE;
       setError(message);
       return { success: false, error: message };
     } finally {
@@ -61,5 +52,5 @@ export function useGoogleAuth() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { signIn, loading, error, clearError };
+  return { available, signIn, loading, error, clearError };
 }

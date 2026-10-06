@@ -231,10 +231,19 @@ who can see only their own data.
   one of them accepts a fixed set of fields; a weekly review must rate all
   three categories with whole stars 1–5, carry at most 2000 characters of
   reflection, and is dated by the server.
-- **Not enforced by the rules:** the 2–4 sessions per week and one per day.
-  Rules cannot count documents; the app enforces both, and the trainer sees
-  every booking. A tampered approved client could over-book, but only from
-  an account the trainer approved and can reject.
+- **The weekly cap is the server's, too.** Rules cannot count documents, so
+  each client keeps a week list, `booking_weeks/<uid>_<monday>`, and every
+  booking she makes must be on it. The rules cap that list at four slots,
+  all in that Monday–Sunday week, no two on one day, and let a slot leave it
+  only once it is really released. `syncWeekInTransaction` writes the list
+  in the same transaction as the bookings; `__tests__/rules` runs that real
+  transaction against the emulator, including a tampered fifth session.
+- **Account deletion is in the app.** A client deletes her account from the
+  profile card (or the waiting room): she re-confirms with Google/Apple, her
+  data goes (`backend/services/accountDeletion.js`), the Apple token is
+  revoked, then the Firebase account. The trainer can erase a former
+  client's data from her screen; that client's sign-in account is removed in
+  the Firebase console.
 - **Default deny.** Any path not matched explicitly is denied.
 
 ### Cancellation deadline
@@ -255,7 +264,7 @@ backstop against a tampered client.
 ### Working on the rules
 
 ```bash
-npm run rules:test     # 87 tests against the Firestore emulator (needs Java)
+npm run rules:test     # 106 tests against the Firestore emulator (needs Java)
 npm run rules:diff     # show the LIVE rules and what they cover vs. this file
 npm run rules:deploy   # firebase deploy --only firestore:rules
 ```

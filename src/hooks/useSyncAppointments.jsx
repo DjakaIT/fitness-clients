@@ -3,6 +3,7 @@ import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../../backend/config/firebase";
 import {
   SlotTakenError,
+  StaleWeekError,
   TooLateToCancelError,
   syncWeekInTransaction,
 } from "../../backend/services/appointmentService";
@@ -15,7 +16,7 @@ import { formatDateShort } from "../../backend/utils/appointmentConfig";
 export default function useSyncAppointments() {
   const [isSaving, setIsSaving] = useState(false);
 
-  const syncWeek = useCallback(async (userId, desired, existing) => {
+  const syncWeek = useCallback(async (userId, desired, existing, weekStart) => {
     if (!userId) return { success: false, error: "Nedostaje korisnik." };
 
     setIsSaving(true);
@@ -24,6 +25,8 @@ export default function useSyncAppointments() {
         syncWeekInTransaction({
           tx,
           slotRef: (id) => doc(db, "appointments", id),
+          weekRef: (id) => doc(db, "booking_weeks", id),
+          weekStart,
           userId,
           desired,
           existing,
@@ -37,6 +40,14 @@ export default function useSyncAppointments() {
           success: false,
           code: error.code,
           error: `Termin ${formatDateShort(error.slot.date)} u ${error.slot.time} je upravo netko rezervirao. Odaberi drugi.`,
+        };
+      }
+      if (error instanceof StaleWeekError) {
+        return {
+          success: false,
+          code: error.code,
+          error:
+            "Tvoji termini za ovaj tjedan su se u međuvremenu promijenili. Vrati se i otvori rezervaciju ponovo.",
         };
       }
       if (error instanceof TooLateToCancelError) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, getDoc } from "firebase/firestore";
@@ -12,6 +12,8 @@ import {
   formatWeekLabel,
 } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminTrainerSavedTimeScreen";
+import useBookedSlots from "../../hooks/useBookedSlots";
+import useFetchUsers from "../../hooks/useFetchUsers";
 
 const createEmptySchedule = () =>
   WORK_DAYS.reduce((acc, day) => {
@@ -25,7 +27,29 @@ export default function AdminTrainerSavedTimeScreen() {
   const [savedWeekStart, setSavedWeekStart] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { weekStart: targetWeekStart } = getBookingWindow();
+  const {
+    weekStart: targetWeekStart,
+    weekEnd: targetWeekEnd,
+    bookableDates,
+  } = useMemo(() => getBookingWindow(), []);
+  // Bookings already made for the week on screen, per day — the trainer's
+  // agenda next to her availability.
+  const { bookedSlots } = useBookedSlots(targetWeekStart, targetWeekEnd);
+  const { users: inPersonClients } = useFetchUsers("in_person");
+  const names = useMemo(
+    () => new Map(inPersonClients.map((u) => [u.id, u.displayName])),
+    [inPersonClients],
+  );
+  const bookedText = (date) => {
+    const day = [...(bookedSlots[date] ?? [])].sort((a, b) =>
+      a.time.localeCompare(b.time),
+    );
+    return day.length === 0
+      ? "Nema rezervacija"
+      : day
+          .map((s) => `${s.time} ${names.get(s.userId) ?? "klijentica"}`)
+          .join(", ");
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -76,7 +100,7 @@ export default function AdminTrainerSavedTimeScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Spremljeno vrijeme</Text>
         <Text style={styles.subtitle}>
-          Ovdje vidiš zadnje spremljeni raspored glavnog posla.
+          Zadnje spremljeni raspored i tko je rezervirao koji termin.
         </Text>
 
         {loading ? (
@@ -113,7 +137,7 @@ export default function AdminTrainerSavedTimeScreen() {
               )}
             </View>
 
-            {WORK_DAYS.map((day) => {
+            {WORK_DAYS.map((day, index) => {
               const blocks = schedule[day.key];
 
               return (
@@ -133,6 +157,15 @@ export default function AdminTrainerSavedTimeScreen() {
                     <Text style={styles.infoLabel}>Slobodno za klijentice</Text>
                     <Text style={styles.infoValue}>
                       {getFreeClientTimeText(blocks)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>
+                      Rezervirano ({formatWeekLabel(targetWeekStart)})
+                    </Text>
+                    <Text style={styles.infoValue}>
+                      {bookedText(bookableDates[index])}
                     </Text>
                   </View>
                 </View>

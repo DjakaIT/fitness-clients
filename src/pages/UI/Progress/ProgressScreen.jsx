@@ -30,7 +30,7 @@ export default function ProgressScreen({ navigation }) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { measurements, loading } = useClientMeasurements(user?.uid);
+  const { measurements, loading, error } = useClientMeasurements(user?.uid);
 
   const latest = measurements[0];
   const history = measurements.slice(1);
@@ -75,6 +75,14 @@ export default function ProgressScreen({ navigation }) {
               <Skeleton style={{ height: 150 }} radius={22} />
               <Skeleton style={{ height: 70 }} radius={16} />
               <Skeleton style={{ height: 70 }} radius={16} />
+            </View>
+          ) : error ? (
+            // Not "no entries yet": her history exists, it just did not load.
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>Unosi se nisu učitali</Text>
+              <Text style={styles.emptyText}>
+                Provjeri vezu i otvori ovaj ekran ponovo.
+              </Text>
             </View>
           ) : !latest ? (
             <View style={styles.emptyCard}>

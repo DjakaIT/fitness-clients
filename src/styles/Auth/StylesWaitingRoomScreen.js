@@ -63,9 +63,19 @@ export const styles = StyleSheet.create({
     textAlign: "center",
   },
   spinnerWrap: { marginTop: 40 },
-  logoutBtn: {
+  bottomActions: {
     position: "absolute",
-    bottom: 40,
+    bottom: 32,
+    alignItems: "center",
+  },
+  deleteLink: { marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+  deleteLinkText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(219, 193, 201, 0.75)",
+    textDecorationLine: "underline",
+  },
+  logoutBtn: {
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 20,

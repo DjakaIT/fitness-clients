@@ -46,6 +46,28 @@ describe("useGoogleAuth", () => {
     expect(result.current.error).toBeNull();
   });
 
+  // Regression: v16 of the library reports a closed picker as a *response*,
+  // { type: "cancelled" }, not an error. That read as "no id token" and told
+  // her sign-in had failed when she had only changed her mind.
+  it("treats the library's cancelled response as a quiet cancel too", async () => {
+    GoogleSignin.signIn.mockResolvedValue({ type: "cancelled", data: null });
+    const { result } = renderHook(() => useGoogleAuth());
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.signIn();
+    });
+
+    expect(outcome).toEqual({ success: false, cancelled: true });
+    expect(result.current.error).toBeNull();
+    expect(signInWithCredential).not.toHaveBeenCalled();
+  });
+
+  it("is available where the native module exists", () => {
+    const { result } = renderHook(() => useGoogleAuth());
+    expect(result.current.available).toBe(true);
+  });
+
   // Regression: every failure used to be swallowed into console.error, so the
   // spinner just stopped and the user was told nothing.
   it("surfaces a message the user can act on when Play Services is missing", async () => {

@@ -1,18 +1,37 @@
-import React from "react";
-import { Text, View, Image, Pressable } from "react-native";
+import React, { useMemo } from "react";
+import { Text, View, Image, Pressable, ScrollView } from "react-native";
 import GeneralButton from "../../components/GeneralButton";
 import { useNavigation } from "@react-navigation/native";
 import { styles } from "../../styles/Admin/StylesAdminHomeScreen";
 import usePendingUsers from "../../hooks/usePendingUsers";
+import useTrainerSchedule from "../../hooks/useTrainerSchedule";
 import ProfilePageComponent from "../../components/ProfilePageComponent";
+import { BRAND } from "../../../backend/config/tenant";
+import {
+  formatWeekLabel,
+  getBookingWindow,
+} from "../../../backend/utils/appointmentConfig";
 
 export default function AdminHomeScreen() {
   const navigation = useNavigation();
   const { pendingUsers } = usePendingUsers();
   const hasPending = pendingUsers.length > 0;
 
+  // Clients can only book a week the trainer has saved a schedule for, and
+  // she has to save it again every week — even unchanged. Without a nudge
+  // here the first sign of a forgotten week was a client saying she could
+  // not book.
+  const { schedule, loading: scheduleLoading } = useTrainerSchedule();
+  const bookingWeek = useMemo(() => getBookingWindow().weekStart, []);
+  const scheduleMissing =
+    !scheduleLoading && schedule?.weekStart !== bookingWeek;
+
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Theme + logout: the one place in the admin section, instead of a
           bubble repeated (and out of place) on every sub-screen. */}
       <View style={styles.topBar}>
@@ -21,7 +40,7 @@ export default function AdminHomeScreen() {
 
       <Text style={styles.greeting}>
         Dobrodošla nazad,{"\n"}
-        <Text style={styles.name}>Marta.</Text>
+        <Text style={styles.name}>{BRAND.trainerName}.</Text>
       </Text>
 
       <View style={styles.imageWrapper}>
@@ -33,12 +52,13 @@ export default function AdminHomeScreen() {
         </View>
       </View>
 
-      <Text style={styles.brandText}>MARTA FITNESS</Text>
+      <Text style={styles.brandText}>{BRAND.appName}</Text>
 
       {hasPending && (
         <Pressable
           style={styles.notificationCard}
           onPress={() => navigation.navigate("AdminUserList")}
+          accessibilityRole="button"
         >
           <View style={styles.notificationDot} />
           <View style={{ flex: 1 }}>
@@ -48,7 +68,29 @@ export default function AdminHomeScreen() {
                 : `${pendingUsers.length} novih prijava`}
             </Text>
             <Text style={styles.notificationSub}>
-              {pendingUsers[0]?.displayName} čeka odobrenje →
+              {/* An Apple account can arrive without a name. */}
+              {pendingUsers[0]?.displayName ||
+                pendingUsers[0]?.email ||
+                "Nova klijentica"}{" "}
+              čeka odobrenje →
+            </Text>
+          </View>
+        </Pressable>
+      )}
+
+      {scheduleMissing && (
+        <Pressable
+          style={styles.notificationCard}
+          onPress={() => navigation.navigate("AdminTrainerTime")}
+          accessibilityRole="button"
+        >
+          <View style={[styles.notificationDot, styles.reminderDot]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.notificationTitle}>
+              Raspored za {formatWeekLabel(bookingWeek)} nije spremljen
+            </Text>
+            <Text style={styles.notificationSub}>
+              Klijentice ne mogu rezervirati dok ga ne spremiš →
             </Text>
           </View>
         </Pressable>
@@ -83,6 +125,6 @@ export default function AdminHomeScreen() {
           </View>
         </GeneralButton>
       </View>
-    </View>
+    </ScrollView>
   );
 }

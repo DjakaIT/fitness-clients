@@ -1,8 +1,9 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#FFFFFF" },
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     paddingHorizontal: 32,
@@ -98,6 +99,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(124, 58, 237, 0.3)",
   },
+  reminderDot: { backgroundColor: "#F59E0B" },
   notificationDot: {
     width: 10,
     height: 10,

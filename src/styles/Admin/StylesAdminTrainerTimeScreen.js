@@ -29,6 +29,26 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     marginBottom: 16,
   },
+  conflictBox: {
+    backgroundColor: "#FFFBEB",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    padding: 14,
+    marginBottom: 12,
+  },
+  conflictTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#92400E",
+    marginBottom: 6,
+  },
+  conflictItem: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#92400E",
+    lineHeight: 19,
+  },
   weekBanner: {
     backgroundColor: "#F5F3FF",
     borderRadius: 16,

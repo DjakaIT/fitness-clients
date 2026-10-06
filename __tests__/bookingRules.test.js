@@ -1,3 +1,4 @@
+import { findScheduleConflicts } from "../backend/utils/bookingRules";
 import {
   DATE_STATUS,
   SLOT_STATUS,
@@ -350,5 +351,53 @@ describe("canClientCancel", () => {
     expect(canClientCancel({ appointmentDate: "x", time: "y" }, {})).toBe(
       false,
     );
+  });
+});
+
+describe("findScheduleConflicts", () => {
+  const booked = {
+    [MONDAY]: [
+      { time: "09:00", userId: "ana", status: "active" },
+      { time: "15:00", userId: "bea", status: "active" },
+    ],
+    [TUESDAY]: [{ time: "10:00", userId: "cvita", status: "cancelled" }],
+  };
+
+  it("finds nothing while the trainer is free", () => {
+    expect(findScheduleConflicts(freeSchedule, booked)).toEqual([]);
+  });
+
+  // A session overlapping a busy block by even half an hour is a conflict.
+  it("names every active booking a busy block now overlaps", () => {
+    const schedule = {
+      ...freeSchedule,
+      monday: [{ start: "08:30", end: "10:00" }],
+    };
+    expect(findScheduleConflicts(schedule, booked)).toEqual([
+      { date: MONDAY, time: "09:00", userId: "ana" },
+    ]);
+  });
+
+  it("ignores cancelled bookings", () => {
+    const schedule = {
+      ...freeSchedule,
+      tuesday: [{ start: "08:00", end: "20:00" }],
+    };
+    expect(findScheduleConflicts(schedule, booked)).toEqual([]);
+  });
+
+  it("sorts by date, then time", () => {
+    const schedule = {
+      ...freeSchedule,
+      monday: [{ start: "08:00", end: "20:00" }],
+    };
+    expect(findScheduleConflicts(schedule, booked).map((c) => c.time)).toEqual([
+      "09:00",
+      "15:00",
+    ]);
+  });
+
+  it("copes with no bookings at all", () => {
+    expect(findScheduleConflicts(freeSchedule, undefined)).toEqual([]);
   });
 });

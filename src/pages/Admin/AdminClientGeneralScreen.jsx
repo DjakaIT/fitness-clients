@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import GeneralButton from "../../components/GeneralButton";
 import useFetchReviews from "../../hooks/useFetchReviews";
+import ClientAdminActions from "../../components/ClientAdminActions";
 
 export default function AdminClientGeneralScreen() {
   const navigation = useNavigation();
@@ -106,6 +107,12 @@ export default function AdminClientGeneralScreen() {
         <Pressable style={s.outlineBtn} onPress={goToMeasurements}>
           <Text style={s.outlineBtnText}>Mjerenja i napredak</Text>
         </Pressable>
+
+        <ClientAdminActions
+          userId={userId}
+          displayName={displayName}
+          trainingType="online"
+        />
       </ScrollView>
     </SafeAreaView>
   );

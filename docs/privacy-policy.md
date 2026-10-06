@@ -1,6 +1,6 @@
 # Politika privatnosti — Marta Fitness
 
-**Zadnja izmjena:** 19. rujna 2026.
+**Zadnja izmjena:** 6. listopada 2026.
 
 Ova aplikacija namijenjena je klijenticama osobne trenerice i služi za
 rezervaciju treninga, praćenje programa vježbanja, tjelesnih mjera i tjednih
@@ -86,8 +86,19 @@ osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, azop@azop.hr.
 ## Brisanje računa
 
 Pojedini unos mjera i slika možeš sama trajno obrisati u aplikaciji (Moj
-napredak → unos → Obriši unos). Za brisanje cijelog računa sa svim podacima
-javi se na **[e-mail]** — bit će obrisan u roku od 30 dana.
+napredak → unos → Obriši unos).
+
+Cijeli račun brišeš sama, odmah, u aplikaciji: dodirni svoju profilnu sliku
+→ **Obriši račun** (dok čekaš odobrenje: **Obriši račun** na dnu ekrana).
+Za potvrdu se još jednom prijaviš svojim Google ili Apple računom. Trajno se
+brišu profil, mjere i slike napretka, upisane kilaže, dojmovi i programi;
+nadolazeći termini se otkazuju i oslobađaju za druge. Termini koji počinju za
+manje od 24 sata ostaju u treneričinom kalendaru bez ikakve veze s tobom.
+Ako si se prijavila Apple ID-em, aplikaciji se ujedno oduzima pristup tvom
+Apple ID-u.
+
+Brisanje možeš zatražiti i na **[e-mail]** — bit će provedeno u roku od 30
+dana.
 
 > **Napomena:** Google Play od 2024. traži da brisanje računa bude moguće
 > zatražiti i putem javno dostupne poveznice, ne samo unutar aplikacije. Ako

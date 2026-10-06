@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
 import useAppointments from "../../hooks/useAppointments";
 import useCancelAppointment from "../../hooks/useCancelAppointment";
+import ClientAdminActions from "../../components/ClientAdminActions";
 import { formatDateLong } from "../../../backend/utils/appointmentConfig";
 import { styles } from "../../styles/Admin/StylesAdminClientsScheduleScreen";
 
@@ -77,19 +78,27 @@ export default function AdminClientScheduleScreen() {
             color="#7C3AED"
             style={{ marginTop: 40 }}
           />
-        ) : error ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Termini se nisu učitali.</Text>
-          </View>
-        ) : appointments.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Nema zakazanih termina.</Text>
-          </View>
         ) : (
           <FlatList
-            data={appointments}
+            data={error ? [] : appointments}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>
+                  {error
+                    ? "Termini se nisu učitali."
+                    : "Nema zakazanih termina."}
+                </Text>
+              </View>
+            }
+            ListFooterComponent={
+              <ClientAdminActions
+                userId={userId}
+                displayName={displayName}
+                trainingType="in_person"
+              />
+            }
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           />

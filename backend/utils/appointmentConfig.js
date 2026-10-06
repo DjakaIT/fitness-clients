@@ -301,6 +301,12 @@ export function getBookingWindow(now = new Date()) {
   };
 }
 
+/** Monday of the week a "YYYY-MM-DD" falls in, as "YYYY-MM-DD" ("" if invalid). */
+export function weekStartOf(dateStr) {
+  const date = parseLocalDate(dateStr);
+  return date ? toLocalDateString(mondayOf(date)) : "";
+}
+
 /** Monday of the week `offsetWeeks` away from the current one, as "YYYY-MM-DD". */
 export function getWeekMondayFromOffset(offsetWeeks = 0, now = new Date()) {
   const monday = mondayOf(new Date(now));

@@ -10,7 +10,11 @@
  * contend on the same key and Firestore serialises them — the loser's
  * transaction re-runs, re-reads the now-taken slot, and fails loudly.
  */
-import { diffSlotSelection, slotDocId } from "../utils/bookingRules.js";
+import {
+  bookingWeekDocId,
+  diffSlotSelection,
+  slotDocId,
+} from "../utils/bookingRules.js";
 import { canCancel } from "../utils/appointmentConfig.js";
 
 export class SlotTakenError extends Error {
@@ -27,6 +31,20 @@ export class NotOwnerError extends Error {
     super("Appointment belongs to another user.");
     this.name = "NotOwnerError";
     this.code = "not-owner";
+  }
+}
+
+/**
+ * The week changed under the screen: a booking of hers that the screen did
+ * not know about (made on another phone, say) is still on her week list.
+ * Saving would silently keep it past the weekly cap, so the rules refuse —
+ * this names the situation instead of a bare permission error.
+ */
+export class StaleWeekError extends Error {
+  constructor() {
+    super("The week's bookings changed since the screen loaded.");
+    this.name = "StaleWeekError";
+    this.code = "stale-week";
   }
 }
 
@@ -48,10 +66,17 @@ const isActive = (snap) => snap.exists() && snap.data().status === "active";
  * Slots the client already holds are left completely untouched — the previous
  * implementation cancelled every booking and re-created them all, which
  * released unchanged slots into a window where anyone could take them.
+ *
+ * With `weekStart` (the Monday) and `weekRef`, it also rewrites her week list,
+ * `booking_weeks/<uid>_<monday>`, to exactly the desired slots. firestore.rules
+ * caps that list (4 slots, one a day) and requires every client booking to be
+ * on it, which is how the weekly limits hold for a tampered client too.
  */
 export async function syncWeekInTransaction({
   tx,
   slotRef,
+  weekRef,
+  weekStart,
   userId,
   desired = [],
   existing = [],
@@ -59,6 +84,7 @@ export async function syncWeekInTransaction({
   timestamp,
 }) {
   const { toBook, toCancel, unchanged } = diffSlotSelection(existing, desired);
+  const tracksWeek = Boolean(weekStart && weekRef);
 
   // ── Phase 1: every read, before any write (Firestore requires this order).
   const claims = [];
@@ -71,6 +97,24 @@ export async function syncWeekInTransaction({
   for (const slot of toCancel) {
     const ref = slotRef(slotDocId(slot.date, slot.time));
     releases.push({ slot, ref, snap: await tx.get(ref) });
+  }
+
+  // Slots on her stored list that this sync neither keeps nor releases: if
+  // any is still an active booking of hers, the screen was out of date.
+  let weekDocRef = null;
+  if (tracksWeek) {
+    weekDocRef = weekRef(bookingWeekDocId(userId, weekStart));
+    const weekSnap = await tx.get(weekDocRef);
+    const handled = new Set(
+      [...desired, ...toCancel].map((s) => slotDocId(s.date, s.time)),
+    );
+    const listed = weekSnap.exists() ? (weekSnap.data().slots ?? []) : [];
+    for (const id of listed.filter((id) => !handled.has(id))) {
+      const snap = await tx.get(slotRef(id));
+      if (isActive(snap) && snap.data().userId === userId) {
+        throw new StaleWeekError();
+      }
+    }
   }
 
   // ── Phase 2: verify before mutating anything, so a conflict on the last slot
@@ -106,12 +150,22 @@ export async function syncWeekInTransaction({
       appointmentDate: slot.date,
       time: slot.time,
       status: "active",
+      ...(tracksWeek ? { weekStart } : {}),
       updatedAt: timestamp(),
     };
     // Re-claiming a slot somebody released keeps the document (and its id),
     // which is what stops the id from being burned after a cancellation.
     if (snap.exists()) tx.update(ref, payload);
     else tx.set(ref, { ...payload, createdAt: timestamp() });
+  }
+
+  if (tracksWeek) {
+    tx.set(weekDocRef, {
+      userId,
+      weekStart,
+      slots: desired.map((s) => slotDocId(s.date, s.time)).sort(),
+      updatedAt: timestamp(),
+    });
   }
 
   return { booked: toBook, cancelled: toCancel, unchanged };

@@ -26,6 +26,11 @@ export function slotDocId(date, time) {
   return `${date}_${time}`;
 }
 
+/** A client's list of slots for one week — "<uid>_<monday>". */
+export function bookingWeekDocId(userId, weekStart) {
+  return `${userId}_${weekStart}`;
+}
+
 export function parseSlotDocId(docId) {
   if (typeof docId !== "string") return null;
   const [date, time] = docId.split("_");
@@ -132,6 +137,30 @@ export function getDateStatus({
   const trainerOffersAnything =
     getFreeClientTimes(getTrainerWorkStartForDate(schedule, date)).length > 0;
   return trainerOffersAnything ? DATE_STATUS.FULL : DATE_STATUS.UNAVAILABLE;
+}
+
+/**
+ * Active bookings that a (possibly unsaved) trainer schedule now overlaps —
+ * shown to the trainer before she saves, since marking herself busy does not
+ * move anyone's session. `bookedSlots` is useBookedSlots' shape:
+ * { "YYYY-MM-DD": [{ time, userId, status }] }. Sorted by date, then time.
+ */
+export function findScheduleConflicts(schedule, bookedSlots = {}) {
+  const conflicts = [];
+  for (const [date, slots] of Object.entries(bookedSlots ?? {})) {
+    const free = getFreeClientTimes(getTrainerWorkStartForDate(schedule, date));
+    for (const slot of slots ?? []) {
+      if (slot.status === "cancelled") continue;
+      if (!free.includes(slot.time)) {
+        conflicts.push({ date, time: slot.time, userId: slot.userId });
+      }
+    }
+  }
+  return conflicts.sort((a, b) =>
+    a.date !== b.date
+      ? a.date.localeCompare(b.date)
+      : a.time.localeCompare(b.time),
+  );
 }
 
 /**

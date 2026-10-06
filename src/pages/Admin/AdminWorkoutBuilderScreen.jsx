@@ -19,6 +19,9 @@ import useSaveWorkout from "../../hooks/useSaveWorkout";
 import useClientWorkouts from "../../hooks/useClientWorkouts";
 import useDeleteWorkout from "../../hooks/useDeleteWorkout";
 import useExerciseLogs from "../../hooks/useExerciseLogs";
+import useConfirmDiscard, {
+  confirmDiscard,
+} from "../../hooks/useConfirmDiscard";
 import { describeProgress } from "../../utils/weightProgress";
 import {
   getWeekMondayFromOffset,
@@ -41,8 +44,15 @@ export default function AdminWorkoutBuilderScreen() {
   const navigation = useNavigation();
   const { params } = useRoute();
   const { userId, displayName } = params;
-  const { saveWorkout } = useSaveWorkout();
+  const { saveWeek } = useSaveWorkout();
   const { deleteWeek } = useDeleteWorkout();
+  // Unsaved changes to the week on screen — guards leaving and switching week.
+  const [edited, setEdited] = useState(false);
+  useConfirmDiscard(
+    navigation,
+    edited,
+    "Program nije spremljen i promjene će biti izgubljene.",
+  );
 
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -88,7 +98,15 @@ export default function AdminWorkoutBuilderScreen() {
     setPrefilled(false);
     setTrainingExercises({});
     setActiveTraining(0);
+    setEdited(false);
   }, [weekStart]);
+
+  const switchWeek = (delta) =>
+    confirmDiscard(
+      edited,
+      () => setWeekOffset((p) => p + delta),
+      "Program za ovaj tjedan nije spremljen i promjene će biti izgubljene.",
+    );
 
   // Pre-fill from existing saved workouts
   useEffect(() => {
@@ -135,10 +153,12 @@ export default function AdminWorkoutBuilderScreen() {
         },
       ],
     }));
+    setEdited(true);
     setModal(null);
   };
 
   const removeExercise = (index) => {
+    setEdited(true);
     setTrainingExercises((prev) => {
       const list = [...(prev[activeTraining] ?? [])];
       list.splice(index, 1);
@@ -155,21 +175,15 @@ export default function AdminWorkoutBuilderScreen() {
 
   const confirmSave = async () => {
     setSaveStatus("saving");
-    let allOk = true;
-    for (let i = 0; i < sessionsPerWeek; i++) {
-      const result = await saveWorkout({
-        userId,
-        weekStart,
-        trainingNumber: i + 1,
-        sessionsPerWeek,
-        exercises: trainingExercises[i] ?? [],
-      });
-      if (!result.success) {
-        allOk = false;
-        break;
-      }
-    }
-    setSaveStatus(allOk ? "success" : "error");
+    const result = await saveWeek({
+      userId,
+      weekStart,
+      sessionsPerWeek,
+      trainings: trainingExercises,
+      existingNumbers: existing.map((w) => w.trainingNumber),
+    });
+    if (result.success) setEdited(false);
+    setSaveStatus(result.success ? "success" : "error");
   };
 
   const closeSaveSheet = () => {
@@ -183,6 +197,7 @@ export default function AdminWorkoutBuilderScreen() {
     if (res.success) {
       setTrainingExercises({});
       setActiveTraining(0);
+      setEdited(false);
       setDeleteStatus("success");
     } else {
       setDeleteStatus("error");
@@ -213,17 +228,11 @@ export default function AdminWorkoutBuilderScreen() {
 
         {/* Week selector */}
         <View style={styles.weekSelector}>
-          <Pressable
-            style={styles.weekArrow}
-            onPress={() => setWeekOffset((p) => p - 1)}
-          >
+          <Pressable style={styles.weekArrow} onPress={() => switchWeek(-1)}>
             <Text style={styles.weekArrowText}>‹</Text>
           </Pressable>
           <Text style={styles.weekLabel}>{formatWeekLabel(weekStart)}</Text>
-          <Pressable
-            style={styles.weekArrow}
-            onPress={() => setWeekOffset((p) => p + 1)}
-          >
+          <Pressable style={styles.weekArrow} onPress={() => switchWeek(1)}>
             <Text style={styles.weekArrowText}>›</Text>
           </Pressable>
         </View>
@@ -239,6 +248,7 @@ export default function AdminWorkoutBuilderScreen() {
                 sessionsPerWeek === n && styles.sessionChipActive,
               ]}
               onPress={() => {
+                if (n !== sessionsPerWeek) setEdited(true);
                 setSessionsPerWeek(n);
                 setActiveTraining(0);
               }}

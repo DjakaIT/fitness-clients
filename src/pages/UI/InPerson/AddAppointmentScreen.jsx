@@ -178,7 +178,7 @@ export default function AddAppointmentScreen() {
       return;
     }
 
-    const result = await syncWeek(user.uid, slots, existingSlots);
+    const result = await syncWeek(user.uid, slots, existingSlots, weekStart);
 
     if (result.success) {
       navigation.goBack();

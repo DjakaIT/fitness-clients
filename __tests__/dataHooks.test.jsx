@@ -22,6 +22,7 @@ jest.mock("firebase/firestore", () => ({
   updateDoc: (...args) => mockUpdateDoc(...args),
   deleteDoc: (...args) => mockDeleteDoc(...args),
   serverTimestamp: () => "SERVER_TS",
+  writeBatch: jest.fn(),
 }));
 
 const useAppointments = require("../src/hooks/useAppointments").default;
@@ -282,6 +283,65 @@ describe("useSaveWorkout", () => {
     });
 
     expect(mockSetDoc.mock.calls[0][2]).toEqual({ merge: true });
+  });
+});
+
+describe("useSaveWorkout — saveWeek", () => {
+  const batch = { set: jest.fn(), delete: jest.fn(), commit: jest.fn() };
+  beforeEach(() => {
+    batch.set.mockClear();
+    batch.delete.mockClear();
+    batch.commit.mockReset().mockResolvedValue(undefined);
+    require("firebase/firestore").writeBatch.mockReturnValue(batch);
+  });
+
+  // Training by training could fail halfway and leave a mixed program.
+  it("writes the whole week in one batch", async () => {
+    const { result } = renderHook(() => useSaveWorkout());
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.saveWeek({
+        userId: "u1",
+        weekStart: "2026-10-05",
+        sessionsPerWeek: 2,
+        trainings: { 0: [{ exerciseId: "1" }], 1: [] },
+      });
+    });
+    expect(outcome.success).toBe(true);
+    expect(batch.set).toHaveBeenCalledTimes(2);
+    expect(batch.set.mock.calls[0][0].id).toBe("2026-10-05_u1_1");
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  // Going from 4 trainings a week to 3 used to leave training 4 behind.
+  it("removes trainings beyond a reduced count", async () => {
+    const { result } = renderHook(() => useSaveWorkout());
+    await act(async () => {
+      await result.current.saveWeek({
+        userId: "u1",
+        weekStart: "2026-10-05",
+        sessionsPerWeek: 3,
+        trainings: {},
+        existingNumbers: [1, 2, 3, 4],
+      });
+    });
+    expect(batch.delete).toHaveBeenCalledTimes(1);
+    expect(batch.delete.mock.calls[0][0].id).toBe("2026-10-05_u1_4");
+  });
+
+  it("reports a failed commit", async () => {
+    batch.commit.mockRejectedValue(new Error("offline"));
+    const { result } = renderHook(() => useSaveWorkout());
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.saveWeek({
+        userId: "u1",
+        weekStart: "2026-10-05",
+        sessionsPerWeek: 2,
+        trainings: {},
+      });
+    });
+    expect(outcome.success).toBe(false);
   });
 });
 

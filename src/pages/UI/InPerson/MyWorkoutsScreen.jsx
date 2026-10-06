@@ -23,6 +23,7 @@ import useExerciseLogs, {
 } from "../../../hooks/useExerciseLogs";
 import PressableScale from "../../../components/PressableScale";
 import Skeleton from "../../../components/Skeleton";
+import useConfirmDiscard from "../../../hooks/useConfirmDiscard";
 import {
   getWeekMondayFromOffset,
   formatWeekLabel,
@@ -112,6 +113,13 @@ export default function MyWorkoutsScreen() {
   };
 
   const dirty = exercises.some((_, idx) => drafts[slotKey(idx)]);
+  // Drafts survive switching week or training (they are keyed by both);
+  // only leaving the screen would lose them silently.
+  useConfirmDiscard(
+    navigation,
+    Object.keys(drafts).length > 0,
+    "Upisane kilaže nisu spremljene i bit će izgubljene.",
+  );
   const anyInvalid = exercises.some((ex, idx) =>
     valuesFor(ex, idx).some((text) => Number.isNaN(parseWeight(text))),
   );

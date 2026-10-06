@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from "@testing-library/react-native";
 import {
   NotOwnerError,
   SlotTakenError,
+  StaleWeekError,
   TooLateToCancelError,
 } from "../backend/services/appointmentService";
 
@@ -84,6 +85,19 @@ describe("useSyncAppointments", () => {
     expect(outcome.error).toContain("09:00");
     expect(outcome.error).toContain("24 sata");
     expect(outcome.error).not.toContain("vezu");
+  });
+
+  it("asks her to reopen the week when it changed under the screen", async () => {
+    mockRunTransaction.mockRejectedValue(new StaleWeekError());
+    const { result } = renderHook(() => useSyncAppointments());
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.syncWeek("me", slots, [], "2025-03-17");
+    });
+
+    expect(outcome.code).toBe("stale-week");
+    expect(outcome.error).toContain("ponovo");
   });
 
   it("returns a generic, non-technical message for any other failure", async () => {

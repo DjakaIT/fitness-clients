@@ -8,8 +8,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, db } from "../../backend/config/firebase";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { isAdminEmail } from "../../backend/config/tenant";
+import { getGoogleSignin } from "../hooks/auth/googleSignin";
 import { resetVideoStore } from "../hooks/useVideos";
 import { takePendingDisplayName } from "../hooks/auth/pendingProfile";
 
@@ -157,7 +157,7 @@ export function AuthProvider({ children }) {
     // Firebase sign-out is the one that actually matters, so it must run even
     // if the Google SDK throws (e.g. Play Services missing).
     try {
-      await GoogleSignin.signOut();
+      await getGoogleSignin()?.GoogleSignin.signOut();
     } catch (err) {
       console.warn("Google sign-out failed, continuing:", err);
     }

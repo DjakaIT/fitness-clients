@@ -14,6 +14,7 @@ import {
   canCancel,
   hoursUntilAppointment,
 } from "../../backend/utils/appointmentConfig";
+import { BOOKING_POLICY } from "../../backend/config/tenant";
 
 export default function CancelAppointmentSheet({
   visible,
@@ -21,6 +22,9 @@ export default function CancelAppointmentSheet({
   onClose,
   onConfirm,
   isCancelling,
+  // Her other active sessions that week; below the weekly minimum she is
+  // told now, not when the booking screen later refuses to save.
+  othersInWeek = null,
 }) {
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -36,6 +40,10 @@ export default function CancelAppointmentSheet({
     hours >= 1
       ? `još ${Math.floor(hours)} h do termina`
       : "termin je vrlo blizu";
+  const belowMinimum =
+    allowed &&
+    othersInWeek !== null &&
+    othersInWeek < BOOKING_POLICY.minSlotsPerWeek;
 
   return (
     <Modal
@@ -66,7 +74,18 @@ export default function CancelAppointmentSheet({
                 Možeš otkazati ovaj termin ({hoursLeftLabel}).
               </Text>
             </View>
-          ) : (
+          ) : null}
+
+          {belowMinimum ? (
+            <Text style={styles.note}>
+              Taj tjedan ti ostaje {othersInWeek}{" "}
+              {othersInWeek === 1 ? "termin" : "termina"}, a minimum je{" "}
+              {BOOKING_POLICY.minSlotsPerWeek}. Dodaj zamjenski termin u
+              rezervaciji.
+            </Text>
+          ) : null}
+
+          {allowed ? null : (
             <View style={[styles.banner, styles.bannerWarn]}>
               <WarningCircle size={22} weight="fill" color={theme.danger} />
               <Text style={[styles.bannerText, { color: theme.danger }]}>
@@ -169,6 +188,13 @@ const makeStyles = (t) =>
       padding: 14,
     },
     bannerOk: { backgroundColor: t.successSoft },
+    note: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: t.textSecondary,
+      lineHeight: 19,
+      marginTop: 12,
+    },
     bannerWarn: { backgroundColor: t.dangerSoft },
     bannerText: {
       flex: 1,

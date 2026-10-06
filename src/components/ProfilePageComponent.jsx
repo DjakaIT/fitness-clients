@@ -13,11 +13,11 @@ import Animated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
-import Ionicons from "@react-native-vector-icons/ionicons";
-import { Moon, Sun } from "phosphor-react-native";
+import { Moon, SignOutIcon, Sun, XIcon } from "phosphor-react-native";
 import { useAuth } from "../context/AuthContext";
 import { useTheme, useThemedStyles } from "../context/ThemeContext";
 import { makeStyles } from "../styles/Components/StylesProfileModal";
+import DeleteAccountSheet from "./DeleteAccountSheet";
 
 function Avatar({ uri, initial, style, textStyle, styles }) {
   if (uri) {
@@ -37,11 +37,12 @@ function Avatar({ uri, initial, style, textStyle, styles }) {
 }
 
 export default function ProfilePageComponent() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { theme, mode, setMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
   const [visible, setVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
 
   const modalScale = useSharedValue(0.85);
   const modalTranslateY = useSharedValue(20);
@@ -81,6 +82,13 @@ export default function ProfilePageComponent() {
     setTimeout(() => {
       logout();
     }, 250);
+  };
+
+  // One modal at a time: the profile card closes first, then the deletion
+  // sheet opens (two stacked Modals misbehave on iOS).
+  const handleDelete = () => {
+    closeModal();
+    setTimeout(() => setDeleteVisible(true), 250);
   };
 
   const modalAnimatedStyle = useAnimatedStyle(() => ({
@@ -123,8 +131,10 @@ export default function ProfilePageComponent() {
               onPress={closeModal}
               style={styles.closeBtn}
               activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Zatvori"
             >
-              <Ionicons name="close" size={20} color={theme.textSecondary} />
+              <XIcon size={18} weight="bold" color={theme.textSecondary} />
             </TouchableOpacity>
 
             <View style={styles.userSection}>
@@ -196,13 +206,32 @@ export default function ProfilePageComponent() {
               onPress={handleLogout}
               activeOpacity={0.7}
               style={styles.logoutBtn}
+              accessibilityRole="button"
             >
-              <Ionicons name="log-out-outline" size={20} color={theme.danger} />
+              <SignOutIcon size={20} weight="bold" color={theme.danger} />
               <Text style={styles.logoutText}>Odjavi se</Text>
             </TouchableOpacity>
+
+            {/* The trainer's account is the studio itself — deleting it
+                would lock every client out — so only clients get this. */}
+            {!isAdmin && (
+              <TouchableOpacity
+                onPress={handleDelete}
+                activeOpacity={0.7}
+                style={styles.deleteBtn}
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteText}>Obriši račun</Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         </View>
       </Modal>
+
+      <DeleteAccountSheet
+        visible={deleteVisible}
+        onClose={() => setDeleteVisible(false)}
+      />
     </>
   );
 }

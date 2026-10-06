@@ -347,6 +347,98 @@ describe("syncWeekInTransaction", () => {
     ).resolves.toBeTruthy();
   });
 
+  describe("with the week list (booking_weeks)", () => {
+    const weekId = `me_${MONDAY}`;
+    const run = (f, desired, existing = [], extra = {}) =>
+      syncWeekInTransaction({
+        tx: f.tx,
+        slotRef: f.slotRef,
+        weekRef: f.slotRef,
+        weekStart: MONDAY,
+        userId: "me",
+        desired,
+        existing,
+        now: WEEK_BEFORE,
+        timestamp: TS,
+        ...extra,
+      });
+
+    // The rules require every client booking to be on this list, and cap it.
+    it("writes the list as exactly the desired slots, and tags each claim with its week", async () => {
+      const f = makeFakeTx();
+      await run(f, [
+        { date: TUESDAY, time: "10:00" },
+        { date: MONDAY, time: "09:00" },
+      ]);
+
+      expect(f.store[weekId]).toEqual({
+        userId: "me",
+        weekStart: MONDAY,
+        slots: ["2025-03-17_09:00", "2025-03-18_10:00"],
+        updatedAt: "SERVER_TS",
+      });
+      expect(f.store["2025-03-17_09:00"].weekStart).toBe(MONDAY);
+    });
+
+    it("drops a released slot from the list", async () => {
+      const f = makeFakeTx({
+        [slotDocId(MONDAY, "09:00")]: activeDoc("me", MONDAY, "09:00"),
+        [weekId]: {
+          userId: "me",
+          weekStart: MONDAY,
+          slots: ["2025-03-17_09:00"],
+        },
+      });
+      await run(
+        f,
+        [{ date: TUESDAY, time: "10:00" }],
+        [{ date: MONDAY, time: "09:00" }],
+      );
+      expect(f.store[weekId].slots).toEqual(["2025-03-18_10:00"]);
+    });
+
+    // A booking made elsewhere (another phone) is on the list but not on this
+    // screen; saving would drop it from the list while it stays booked — the
+    // rules refuse that, so the app names it instead.
+    it("refuses when the list holds a booking the screen did not know about", async () => {
+      const f = makeFakeTx({
+        [slotDocId(WEDNESDAY, "12:00")]: activeDoc("me", WEDNESDAY, "12:00"),
+        [weekId]: {
+          userId: "me",
+          weekStart: MONDAY,
+          slots: ["2025-03-19_12:00"],
+        },
+      });
+      await expect(
+        run(f, [
+          { date: MONDAY, time: "09:00" },
+          { date: TUESDAY, time: "10:00" },
+        ]),
+      ).rejects.toMatchObject({ code: "stale-week" });
+      expect(f.calls.some(([op]) => op === "set" || op === "update")).toBe(
+        false,
+      );
+    });
+
+    // The trainer cancelling one of her slots leaves it on the list; that is
+    // released already and simply falls off.
+    it("ignores a listed slot that is no longer an active booking of hers", async () => {
+      const f = makeFakeTx({
+        [slotDocId(WEDNESDAY, "12:00")]: {
+          ...activeDoc("me", WEDNESDAY, "12:00"),
+          status: "cancelled",
+        },
+        [weekId]: {
+          userId: "me",
+          weekStart: MONDAY,
+          slots: ["2025-03-19_12:00"],
+        },
+      });
+      await run(f, [{ date: MONDAY, time: "09:00" }]);
+      expect(f.store[weekId].slots).toEqual(["2025-03-17_09:00"]);
+    });
+  });
+
   it("handles an empty submission without writing anything", async () => {
     const f = makeFakeTx();
     const result = await syncWeekInTransaction({
