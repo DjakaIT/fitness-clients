@@ -82,7 +82,7 @@ export default function WelcomeScreen() {
               <View style={styles.divider} />
             </FadeInView>
             <FadeInView delay={450}>
-              <Text style={styles.tagline}>Tvoj vodič do promjene</Text>
+              <Text style={styles.tagline}>Tvoj prvi fitnes korak sa mnom</Text>
             </FadeInView>
           </View>
 

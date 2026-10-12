@@ -7,9 +7,8 @@
  * reject a write, but it cannot tell the client *which* field was wrong.
  */
 import { z } from "zod";
-import { BOOKING_POLICY } from "../config/tenant.js";
+import { GOAL_KEYS, MAX_TARGET_WEIGHT, MIN_TARGET_WEIGHT } from "./goals.js";
 
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 /** "YYYY-MM-DD" that is also a real calendar date (rejects 2025-02-30). */
@@ -25,53 +24,6 @@ export const dateStringSchema = z
       parsed.getDate() === d
     );
   }, "Datum ne postoji u kalendaru.");
-
-/** "HH:MM", 24-hour. */
-export const timeStringSchema = z
-  .string()
-  .regex(TIME_RE, "Vrijeme mora biti u obliku HH:MM.");
-
-/** "HH:MM" that also lands on the booking grid (e.g. :00 / :30). */
-export const gridTimeSchema = timeStringSchema.refine(
-  (value) => Number(value.slice(3)) % BOOKING_POLICY.slotGridMinutes === 0,
-  `Vrijeme mora biti na ${BOOKING_POLICY.slotGridMinutes}-minutnoj mreži.`,
-);
-
-export const slotSchema = z.object({
-  date: dateStringSchema,
-  time: gridTimeSchema,
-});
-
-/** The set of slots a client submits for one week. */
-export const weeklySlotSelectionSchema = z
-  .array(slotSchema)
-  .min(
-    BOOKING_POLICY.minSlotsPerWeek,
-    `Odaberi barem ${BOOKING_POLICY.minSlotsPerWeek} termina.`,
-  )
-  .max(
-    BOOKING_POLICY.maxSlotsPerWeek,
-    `Najviše ${BOOKING_POLICY.maxSlotsPerWeek} termina tjedno.`,
-  )
-  .refine(
-    (slots) => new Set(slots.map((s) => s.date)).size === slots.length,
-    "Možeš odabrati samo jedan termin po danu.",
-  );
-
-/** One appointment document as it is stored. */
-export const appointmentSchema = z.object({
-  userId: z.string().min(1),
-  appointmentDate: dateStringSchema,
-  time: gridTimeSchema,
-  status: z.enum(["active", "cancelled"]),
-});
-
-/** One busy block on the trainer's calendar. */
-export const busyBlockSchema = z
-  .object({ start: timeStringSchema, end: timeStringSchema })
-  .refine((b) => b.end > b.start, "Kraj mora biti nakon početka.");
-
-export const dayScheduleSchema = z.array(busyBlockSchema);
 
 /** Body measurements — numbers arrive as strings from TextInput. */
 const measurementValueSchema = z
@@ -95,7 +47,16 @@ export const measurementSchema = z.object({
 });
 
 export const userStatusSchema = z.enum(["pending", "active", "rejected"]);
-export const trainingTypeSchema = z.enum(["online", "in_person"]);
+
+/** What the client answers in the goal survey after she is approved. */
+export const goalSchema = z.object({
+  goal: z.enum(GOAL_KEYS),
+  targetWeight: z
+    .number()
+    .min(MIN_TARGET_WEIGHT, `Ciljana kilaža mora biti barem ${MIN_TARGET_WEIGHT} kg.`)
+    .max(MAX_TARGET_WEIGHT, `Ciljana kilaža može biti najviše ${MAX_TARGET_WEIGHT} kg.`)
+    .nullable(),
+});
 
 /**
  * Collapses a ZodError into `{ ok: false, error: "<first message>" }` so callers

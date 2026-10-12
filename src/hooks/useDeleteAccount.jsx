@@ -5,8 +5,6 @@ import {
   doc,
   getDocs,
   query,
-  serverTimestamp,
-  updateDoc,
   where,
 } from "firebase/firestore";
 import {
@@ -32,13 +30,6 @@ export function clientDataOps(userId) {
     getDocs(query(collection(db, name), where("userId", "==", userId)));
   return {
     listOwned: async (name) => (await mine(name)).docs.map((d) => d.id),
-    listAppointments: async () =>
-      (await mine("appointments")).docs.map((d) => ({ id: d.id, ...d.data() })),
-    cancelAppointment: (id) =>
-      updateDoc(doc(db, "appointments", id), {
-        status: "cancelled",
-        cancelledAt: serverTimestamp(),
-      }),
     remove: (name, id) => deleteDoc(doc(db, name, id)),
     removeProfile: () => deleteDoc(doc(db, "users", userId)),
   };

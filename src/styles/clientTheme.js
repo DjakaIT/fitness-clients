@@ -1,6 +1,8 @@
-// Client-facing theme system — one accent (feminine rose), light + dark variants.
+// The app's theme system — one accent (feminine rose), light + dark variants.
 // Both objects share identical keys so any themed StyleSheet factory can consume
 // either without conditionals. Warm rose/blush/plum tone — soft and feminine.
+// The trainer's screens use it too, so both sides of the app read as one
+// product and follow the same light/dark choice.
 
 export const darkTheme = {
   mode: "dark",
@@ -18,6 +20,8 @@ export const darkTheme = {
   accentSoft: "rgba(237, 156, 184, 0.13)",
   accentBorder: "rgba(237, 156, 184, 0.32)",
   onAccent: "#1E1218",
+  // Same-hue pair for filled buttons — a gradient that never changes colour.
+  accentGradient: ["#F0A8C1", "#E58BAB"],
 
   // Text — warm whites / mauve-greys
   textPrimary: "#FCF6F9",
@@ -29,10 +33,14 @@ export const darkTheme = {
   successSoft: "rgba(95, 211, 155, 0.13)",
   danger: "#F0899A",
   dangerSoft: "rgba(240, 137, 154, 0.13)",
+  warning: "#F2C26B",
+  warningSoft: "rgba(242, 194, 107, 0.14)",
 
   // Overlays
   overlay: "rgba(10, 6, 9, 0.72)",
   inputBg: "#292229",
+  // Behind a full-screen photo, in either theme.
+  scrim: "rgba(8, 5, 7, 0.94)",
 
   // Shadow fragments (spread into styles)
   cardShadow: {
@@ -67,6 +75,7 @@ export const lightTheme = {
   accentSoft: "rgba(214, 73, 126, 0.10)",
   accentBorder: "rgba(214, 73, 126, 0.28)",
   onAccent: "#FFFFFF",
+  accentGradient: ["#DB5689", "#C93C71"],
 
   // Text — warm plum-black / mauve-greys
   textPrimary: "#2B1F26",
@@ -78,10 +87,13 @@ export const lightTheme = {
   successSoft: "rgba(21, 154, 99, 0.10)",
   danger: "#D63A57",
   dangerSoft: "rgba(214, 58, 87, 0.09)",
+  warning: "#B7791F",
+  warningSoft: "rgba(183, 121, 31, 0.10)",
 
   // Overlays
   overlay: "rgba(43, 31, 38, 0.35)",
   inputBg: "#FAF3F6",
+  scrim: "rgba(8, 5, 7, 0.94)",
 
   // Shadow fragments (spread into styles)
   cardShadow: {

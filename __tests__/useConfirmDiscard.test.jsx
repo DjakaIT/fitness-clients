@@ -1,8 +1,8 @@
 import { renderHook, act } from "@testing-library/react-native";
-import { Alert } from "react-native";
 import useConfirmDiscard, {
   confirmDiscard,
 } from "../src/hooks/useConfirmDiscard";
+import { getDialog, resetDialogs } from "../src/utils/dialog";
 
 const makeNavigation = () => {
   const nav = { handler: null, dispatch: jest.fn() };
@@ -18,10 +18,7 @@ const leaveEvent = () => ({
   data: { action: { type: "GO_BACK" } },
 });
 
-beforeEach(() => {
-  jest.spyOn(Alert, "alert").mockImplementation(() => {});
-});
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => resetDialogs());
 
 describe("useConfirmDiscard", () => {
   it("lets a clean screen go without asking", () => {
@@ -30,7 +27,7 @@ describe("useConfirmDiscard", () => {
     const event = leaveEvent();
     nav.handler(event);
     expect(event.preventDefault).not.toHaveBeenCalled();
-    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(getDialog()).toBeNull();
   });
 
   it("holds a dirty screen and leaves only after 'Odbaci'", () => {
@@ -40,8 +37,9 @@ describe("useConfirmDiscard", () => {
     nav.handler(event);
 
     expect(event.preventDefault).toHaveBeenCalled();
-    const buttons = Alert.alert.mock.calls[0][2];
+    const { buttons } = getDialog();
     expect(buttons.map((b) => b.text)).toEqual(["Ostani", "Odbaci"]);
+    expect(buttons[1].style).toBe("destructive");
     buttons[1].onPress();
     expect(nav.dispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
   });
@@ -63,14 +61,14 @@ describe("confirmDiscard", () => {
     const go = jest.fn();
     confirmDiscard(false, go);
     expect(go).toHaveBeenCalled();
-    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(getDialog()).toBeNull();
   });
 
   it("asks first when something is", () => {
     const go = jest.fn();
     confirmDiscard(true, go);
     expect(go).not.toHaveBeenCalled();
-    Alert.alert.mock.calls[0][2][1].onPress();
+    getDialog().buttons[1].onPress();
     expect(go).toHaveBeenCalled();
   });
 });

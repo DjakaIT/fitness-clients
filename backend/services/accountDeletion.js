@@ -7,12 +7,9 @@
  * is what lets the order and the failure handling be unit-tested.
  *
  *   ops.listOwned(collection)   → ids of her documents in that collection
- *   ops.listAppointments()      → her appointments, [{ id, appointmentDate, time, status }]
- *   ops.cancelAppointment(id)   → release one booking
  *   ops.remove(collection, id)  → delete one document (a missing one is fine)
  *   ops.removeProfile()         → delete users/<uid>
  */
-import { canCancel } from "../utils/appointmentConfig.js";
 import { PHOTO_ANGLE_KEYS } from "../utils/progress.js";
 
 /** Collections whose documents belong to one client, found by `userId`. */
@@ -21,6 +18,13 @@ export const CLIENT_COLLECTIONS = [
   "weekly_review",
   "workouts",
 ];
+
+/**
+ * Left over from in-person training, which the app no longer offers. Nothing
+ * writes them any more; the trainer's erasure still clears a former
+ * in-person client's old bookings so nothing tied to her id stays behind.
+ */
+export const LEGACY_BOOKING_COLLECTIONS = ["appointments", "booking_weeks"];
 
 /**
  * Check-ins and their photos. Photo ids are derived from the check-in ids
@@ -45,75 +49,34 @@ async function removeAll(ops, collection) {
 }
 
 /**
- * Her own deletion. Order matters:
- *
- *  1. Bookings she can still cancel are released, so the slots go back to
- *     other clients. A session less than 24h away cannot be released by her
- *     (the rules hold her to the same cutoff as always); it stays on the
- *     trainer's calendar under an id that no longer leads to anyone.
- *  2. Week lists are deleted where the rules allow (a past week, or one whose
- *     bookings are all released). One holding a session inside the cutoff
- *     stays, for the same reason — that is not a failure.
- *  3. Everything else she owns is deleted. Any failure here stops the run
- *     before the profile goes, so she can simply try again.
- *  4. The profile goes last: until then the rules still know who she is.
+ * Her own deletion. Everything she owns goes first; any failure stops the
+ * run before the profile goes, so she can simply try again. The profile goes
+ * last: until then the rules still know who she is.
  */
-export async function deleteOwnData({ ops, now = Date.now() }) {
-  const kept = [];
-
-  let appointments = [];
-  try {
-    appointments = await ops.listAppointments();
-  } catch {
-    // An online client may not read the calendar at all — she has nothing
-    // on it. Anything she does hold, the trainer can still release.
-    appointments = [];
-  }
-  const active = appointments.filter((a) => a.status === "active");
-  const releasable = active.filter((a) =>
-    canCancel(a.appointmentDate, a.time, now),
-  );
-  await Promise.all(releasable.map((a) => ops.cancelAppointment(a.id)));
-  kept.push(
-    ...active
-      .filter((a) => !releasable.includes(a))
-      .map((a) => `appointments/${a.id}`),
-  );
-
-  const weeks = await ops.listOwned("booking_weeks");
-  const weekResults = await Promise.allSettled(
-    weeks.map((id) => ops.remove("booking_weeks", id)),
-  );
-  weekResults.forEach((r, i) => {
-    if (r.status === "rejected") kept.push(`booking_weeks/${weeks[i]}`);
-  });
-
-  await removeCheckIns(ops);
+export async function deleteOwnData({ ops }) {
+  const checkIns = await removeCheckIns(ops);
   for (const collection of CLIENT_COLLECTIONS) {
     await removeAll(ops, collection);
   }
-
   await ops.removeProfile();
-
-  return { released: releasable.length, kept };
+  return { checkIns };
 }
 
 /**
- * The trainer erasing a former client: everything, bookings included (past
- * ones too — an erasure request covers her history). The trainer is not
- * bound by the cutoff, so nothing is left behind in Firestore. Her sign-in
- * account itself can only be removed in the Firebase console.
+ * The trainer erasing a former client: everything, legacy bookings included
+ * (an erasure request covers her history). Her sign-in account itself can
+ * only be removed in the Firebase console.
  */
 export async function deleteClientDataAsTrainer({ ops }) {
-  const appointments = await ops.listAppointments();
-  await Promise.all(appointments.map((a) => ops.remove("appointments", a.id)));
-
-  await removeAll(ops, "booking_weeks");
-  await removeCheckIns(ops);
+  let legacy = 0;
+  for (const collection of LEGACY_BOOKING_COLLECTIONS) {
+    legacy += await removeAll(ops, collection);
+  }
+  const checkIns = await removeCheckIns(ops);
   for (const collection of CLIENT_COLLECTIONS) {
     await removeAll(ops, collection);
   }
 
   await ops.removeProfile();
-  return { appointments: appointments.length };
+  return { checkIns, legacy };
 }

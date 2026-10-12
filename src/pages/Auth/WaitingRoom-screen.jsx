@@ -1,128 +1,119 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../../../backend/config/firebase";
-import { useAuth } from "../../context/AuthContext";
-import { styles } from "../../styles/Auth/StylesWaitingRoomScreen";
-import DeleteAccountSheet from "../../components/DeleteAccountSheet";
-import { BRAND } from "../../../backend/config/tenant";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { useAuth } from "../../context/AuthContext";
+import AuthBackdrop from "../../components/AuthBackdrop";
+import FadeInView from "../../components/FadeInView";
+import DeleteAccountSheet from "../../components/DeleteAccountSheet";
+import useReducedMotion from "../../hooks/useReducedMotion";
+import { styles } from "../../styles/Auth/StylesWaitingRoomScreen";
 
-const TRAINING_TYPES = ["online", "in_person"];
-
+/**
+ * Where a client waits for the trainer's approval — the same calm, cream
+ * world as the login she has just come from, so being "not in yet" feels
+ * like a pause, not a wall. The approval arrives live (AuthContext listens to
+ * her profile), so the screen simply gives way to the app; nothing to tap.
+ */
 export default function WaitingRoomScreen() {
-  const { user, status, trainingType, logout } = useAuth();
-  const [selecting, setSelecting] = useState(false);
-  const [selectError, setSelectError] = useState(null);
+  const { user, status, logout } = useAuth();
   const [deleteVisible, setDeleteVisible] = useState(false);
-
-  const handleSelectTrainingType = async (type) => {
-    if (!user?.uid) return;
-    setSelecting(true);
-    setSelectError(null);
-    try {
-      await updateDoc(doc(db, "users", user.uid), { trainingType: type });
-      // trainingType state updates automatically via onSnapshot in AuthContext
-    } catch (e) {
-      console.error(e);
-      setSelectError("Odabir nije spremljen. Provjeri vezu i pokušaj ponovo.");
-    } finally {
-      setSelecting(false);
-    }
-  };
+  const reducedMotion = useReducedMotion();
+  const breath = useRef(new Animated.Value(0)).current;
 
   const isRejected = status === "rejected";
-  const needsTrainingType =
-    !isRejected && !TRAINING_TYPES.includes(trainingType);
-  // The rules keep the type open only while the request is pending, so the
-  // option to correct a wrong pick is offered exactly then.
-  const canChangeType = status === "pending" && !needsTrainingType;
-  const otherType = trainingType === "online" ? "in_person" : "online";
   const firstName = user?.displayName?.split(" ")[0] ?? "";
 
+  // A slow breath around the logo: the app is waiting with her, not frozen.
+  useEffect(() => {
+    if (reducedMotion || isRejected) {
+      breath.setValue(0);
+      return undefined;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breath, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breath, {
+          toValue: 0,
+          duration: 1800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [breath, reducedMotion, isRejected]);
+
+  const haloScale = breath.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.08],
+  });
+  const haloOpacity = breath.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.7],
+  });
+
   return (
-    <LinearGradient colors={["#4b0622", "#654b55"]} style={styles.gradient}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <Text style={styles.brand}>{BRAND.appName}</Text>
-
-          {isRejected ? (
-            <>
-              <Text style={styles.title}>Zahtjev odbijen</Text>
-              <Text style={styles.subtitle}>
-                Nažalost, tvoj zahtjev nije odobren.{"\n"}
-                Za više informacija javi se trenerici.
-              </Text>
-            </>
-          ) : needsTrainingType ? (
-            <>
-              <Text style={styles.title}>
-                Dobrodošla,{"\n"}
-                {firstName}!
-              </Text>
-              <Text style={styles.subtitle}>
-                Odaberi vrstu treninga koji želiš:
-              </Text>
-              {selecting ? (
-                <ActivityIndicator color="#F497BA" style={{ marginTop: 32 }} />
-              ) : (
-                <View style={styles.typeRow}>
-                  <Pressable
-                    style={styles.typeCard}
-                    onPress={() => handleSelectTrainingType("online")}
-                  >
-                    <Text style={styles.typeIcon}>💻</Text>
-                    <Text style={styles.typeLabel}>Online</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.typeCard}
-                    onPress={() => handleSelectTrainingType("in_person")}
-                  >
-                    <Text style={styles.typeIcon}>🏋️</Text>
-                    <Text style={styles.typeLabel}>Osobno</Text>
-                  </Pressable>
+    <View style={styles.root}>
+      <StatusBar style="dark" />
+      <AuthBackdrop>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.content}>
+            <FadeInView delay={100}>
+              <View style={styles.logoWrap}>
+                <Animated.View
+                  style={[
+                    styles.halo,
+                    { opacity: haloOpacity, transform: [{ scale: haloScale }] },
+                  ]}
+                />
+                <View style={styles.logoCard}>
+                  <Image
+                    source={require("../../../assets/images/logo.jpeg")}
+                    style={styles.logo}
+                    resizeMode="cover"
+                  />
                 </View>
-              )}
-            </>
-          ) : (
-            <>
-              <Text style={styles.title}>Zahtjev poslan!</Text>
-              <Text style={styles.subtitle}>
-                Čekamo potvrdu trenerice {BRAND.trainerNameGenitive}.{"\n"}
-                Dobit ćeš pristup čim te odobri.{"\n\n"}
-                Vrsta treninga:{" "}
-                <Text style={styles.highlight}>
-                  {trainingType === "online" ? "Online" : "Osobno"}
-                </Text>
-              </Text>
-              {canChangeType && (
-                <Pressable
-                  style={styles.changeTypeBtn}
-                  onPress={() => handleSelectTrainingType(otherType)}
-                  disabled={selecting}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.changeTypeText}>
-                    {otherType === "online"
-                      ? "Promijeni u online"
-                      : "Promijeni u osobno"}
-                  </Text>
-                </Pressable>
-              )}
-              <View style={styles.spinnerWrap}>
-                <ActivityIndicator size="large" color="#F497BA" />
               </View>
-            </>
-          )}
+            </FadeInView>
 
-          {!!selectError && (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {selectError}
-            </Text>
-          )}
+            <FadeInView delay={260} style={styles.textBlock}>
+              {!!firstName && (
+                <Text style={styles.greeting}>Hej, {firstName}!</Text>
+              )}
+              {isRejected ? (
+                <>
+                  <Text style={styles.message} accessibilityRole="header">
+                    Tvoj zahtjev ovaj put nije odobren
+                  </Text>
+                  <Text style={styles.subtitle}>
+                    Za više informacija javi se trenerici — rado će ti
+                    pomoći.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.message} accessibilityRole="header">
+                    Još malo pa će te trenerica odobriti, daj koju minutu i
+                    tvoja promjena počinje!
+                  </Text>
+                  <View style={styles.dots} accessibilityElementsHidden>
+                    {[0, 1, 2].map((i) => (
+                      <Dot key={i} index={i} still={reducedMotion} />
+                    ))}
+                  </View>
+                </>
+              )}
+            </FadeInView>
+          </View>
 
-          <View style={styles.bottomActions}>
+          <FadeInView delay={420} style={styles.bottomActions}>
             <Pressable
               style={styles.logoutBtn}
               onPress={logout}
@@ -139,13 +130,60 @@ export default function WaitingRoomScreen() {
             >
               <Text style={styles.deleteLinkText}>Obriši račun</Text>
             </Pressable>
-          </View>
-        </View>
-      </SafeAreaView>
+          </FadeInView>
+        </SafeAreaView>
+      </AuthBackdrop>
       <DeleteAccountSheet
         visible={deleteVisible}
         onClose={() => setDeleteVisible(false)}
       />
-    </LinearGradient>
+    </View>
+  );
+}
+
+/** One of three dots that rise in turn — "on its way". */
+function Dot({ index, still }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (still) return undefined;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(index * 180),
+        Animated.timing(v, {
+          toValue: 1,
+          duration: 420,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v, {
+          toValue: 0,
+          duration: 420,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.delay((2 - index) * 180 + 300),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [v, index, still]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        {
+          opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+          transform: [
+            {
+              translateY: v.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -5],
+              }),
+            },
+          ],
+        },
+      ]}
+    />
   );
 }

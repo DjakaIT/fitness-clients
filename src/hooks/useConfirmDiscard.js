@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Alert } from "react-native";
+import { NotePencilIcon } from "phosphor-react-native";
+import { showDialog } from "../utils/dialog";
 
 const TITLE = "Odbaciti promjene?";
 const DEFAULT_MESSAGE =
   "Ono što si upisala, a nisi spremila, bit će izgubljeno.";
+
+function ask(message, onDiscard) {
+  showDialog({
+    title: TITLE,
+    message,
+    icon: NotePencilIcon,
+    buttons: [
+      { text: "Ostani", style: "cancel" },
+      { text: "Odbaci", style: "destructive", onPress: onDiscard },
+    ],
+  });
+}
 
 /**
  * Runs `onDiscard` straight away when nothing is unsaved, and otherwise only
@@ -15,10 +28,7 @@ export function confirmDiscard(dirty, onDiscard, message = DEFAULT_MESSAGE) {
     onDiscard();
     return;
   }
-  Alert.alert(TITLE, message, [
-    { text: "Ostani", style: "cancel" },
-    { text: "Odbaci", style: "destructive", onPress: onDiscard },
-  ]);
+  ask(message, onDiscard);
 }
 
 /**
@@ -39,14 +49,7 @@ export default function useConfirmDiscard(
     return navigation.addListener("beforeRemove", (event) => {
       if (!dirty || leaving.current) return;
       event.preventDefault();
-      Alert.alert(TITLE, message, [
-        { text: "Ostani", style: "cancel" },
-        {
-          text: "Odbaci",
-          style: "destructive",
-          onPress: () => navigation.dispatch(event.data.action),
-        },
-      ]);
+      ask(message, () => navigation.dispatch(event.data.action));
     });
   }, [navigation, dirty, message]);
 

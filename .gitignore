@@ -79,3 +79,6 @@ firestore-debug.log
 ui-debug.log
 database-debug.log
 pubsub-debug.log
+
+# Launch film (/brag) output: video, frames and render scripts, local only
+brag-output/

@@ -23,7 +23,7 @@ jest.mock("firebase/auth", () => ({
 
 const mockDeleteOwnData = jest.fn(async () => {
   order.push("data");
-  return { released: 0, kept: [] };
+  return { checkIns: 0 };
 });
 jest.mock("../backend/services/accountDeletion", () => ({
   deleteOwnData: (...a) => mockDeleteOwnData(...a),

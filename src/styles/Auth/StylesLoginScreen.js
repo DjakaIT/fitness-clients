@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
   logoCard: {
     width: LOGO,
     height: LOGO,
-    borderRadius: 26,
+    borderRadius: 150,
     backgroundColor: AUTH.card,
     overflow: "hidden",
     marginBottom: 30,

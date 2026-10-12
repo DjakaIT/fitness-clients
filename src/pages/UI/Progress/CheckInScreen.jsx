@@ -364,11 +364,6 @@ export default function CheckInScreen({ route, navigation }) {
                 )}
               </PressableScale>
             )}
-
-            <Text style={styles.privacyNote}>
-              Slike vidite samo ti i trenerica. Prije spremanja se smanjuju, a
-              podaci o lokaciji iz fotografije se uklanjaju.
-            </Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

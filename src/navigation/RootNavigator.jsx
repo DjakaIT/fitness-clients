@@ -1,18 +1,27 @@
 import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import AuthNavigator from "./AuthNavigator";
 import TabNavigator from "./TabNavigator";
 import AdminNavigator from "./AdminNavigator";
-import InPersonNavigator from "./InPersonNavigator";
 import WaitingRoomScreen from "../pages/Auth/WaitingRoom-screen";
+import GoalSurveyScreen from "../pages/Auth/GoalSurvey-screen";
 
 export default function RootNavigator() {
-  const { isAuthenticated, loading, isAdmin, status, trainingType } = useAuth();
+  const { isAuthenticated, loading, isAdmin, status, goal } = useAuth();
+  const { theme } = useTheme();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#7C3AED" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.bg,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
@@ -28,14 +37,10 @@ export default function RootNavigator() {
   // which also test for "active" exactly.
   if (status !== "active") return <WaitingRoomScreen />;
 
-  // Approved without ever picking a training type (approved before choosing,
-  // or an older account): the waiting room asks for it, once. Defaulting to
-  // the online tabs instead would leave her in neither of the trainer's
-  // client lists, which are split by type.
-  if (trainingType !== "in_person" && trainingType !== "online") {
-    return <WaitingRoomScreen />;
-  }
+  // Approved, but she has not said what she is working towards yet. Her
+  // progress is measured against that goal, so it is asked once, here —
+  // including for clients approved before the survey existed.
+  if (!goal) return <GoalSurveyScreen />;
 
-  if (trainingType === "in_person") return <InPersonNavigator />;
   return <TabNavigator />;
 }

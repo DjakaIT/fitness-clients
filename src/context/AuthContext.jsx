@@ -12,6 +12,7 @@ import { isAdminEmail } from "../../backend/config/tenant";
 import { getGoogleSignin } from "../hooks/auth/googleSignin";
 import { resetVideoStore } from "../hooks/useVideos";
 import { takePendingDisplayName } from "../hooks/auth/pendingProfile";
+import { isGoal } from "../../backend/utils/goals";
 
 const AuthContext = createContext(null);
 
@@ -21,7 +22,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [status, setStatus] = useState(null); // "pending" | "active" | "rejected"
-  const [trainingType, setTrainingType] = useState(null); // "online" | "in_person" | null
+  // What she answered in the goal survey: "lose" | "gain" | "tone" | null.
+  const [goal, setGoal] = useState(null);
+  const [targetWeight, setTargetWeight] = useState(null);
   const [error, setError] = useState(null);
   const unsubscribeSnapshotRef = useRef(null);
   // Bumped on every auth change. The profile setup below awaits the network;
@@ -48,7 +51,8 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(false);
         setIsAdmin(false);
         setStatus(null);
-        setTrainingType(null);
+        setGoal(null);
+        setTargetWeight(null);
         setError(null);
         setLoading(false);
         return;
@@ -88,7 +92,6 @@ export function AuthProvider({ children }) {
             photoURL: firebaseUser.photoURL ?? null,
             role: isTrainerAccount ? "admin" : "user",
             status: isTrainerAccount ? "active" : "pending",
-            trainingType: null,
             createdAt: serverTimestamp(),
             lastLogin: serverTimestamp(),
           });
@@ -124,7 +127,10 @@ export function AuthProvider({ children }) {
             // exactly), so treating it as active here would only open a
             // broken app full of permission errors.
             setStatus(data.status ?? "pending");
-            setTrainingType(data.trainingType ?? null);
+            setGoal(isGoal(data.goal) ? data.goal : null);
+            setTargetWeight(
+              typeof data.targetWeight === "number" ? data.targetWeight : null,
+            );
             // Authority for "is this the trainer" is the stored role, which only
             // the trainer can write. The e-mail is used for bootstrap only.
             setIsAdmin(data.role === "admin");
@@ -179,7 +185,8 @@ export function AuthProvider({ children }) {
         loading,
         isAdmin,
         status,
-        trainingType,
+        goal,
+        targetWeight,
         error,
       }}
     >
